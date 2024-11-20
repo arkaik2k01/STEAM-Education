@@ -1,3 +1,4 @@
+import React from 'react';
 import { TestAuth } from "../components/testAuth";
 
 function TestPage() {
@@ -10,3 +11,5 @@ function TestPage() {
         </div>
     );
 }
+
+export default TestPage;

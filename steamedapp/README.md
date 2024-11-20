@@ -39,6 +39,24 @@ Instead, it will copy all the configuration files and the transitive dependencie
 
 You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
 
+## Emulators
+
+Here are important commands...
+
+## `firebase emulators:start --import test-data`
+
+Before starting the emulators, make sure 'npm start' is running and compiled successfully. If so, use the command above.
+
+Note: No matter what changes are made to the emulators during the development process, when this command is run, the data set will go back to its original state.
+
+## `firebase emulators:start --only firestore`
+
+It is possible to start one emulator. Above shows firestore, but others can be done as well.
+
+## `firebase emualtors:export test-data`
+
+This command will export specific data sets that you want to save for later use.
+
 ## Learn More
 
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
@@ -68,4 +86,3 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
-

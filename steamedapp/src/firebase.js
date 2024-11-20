@@ -2,9 +2,9 @@
 import { initializeApp } from "firebase/app";
 
 // Imports for emulators and built-in functions
-import { getAuth, Auth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, signOut, updateProfile } from 'firebase/auth';
-import { Firestore, getFirestore } from 'firebase/firestore';
-import { Function } from 'firebase/functions';
+import { getAuth, connectAuthEmulator, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, signOut, updateProfile } from 'firebase/auth';
+import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
+import { connectFunctionsEmulator, getFunctions } from 'firebase/functions';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -17,24 +17,27 @@ const firebaseConfig = {
   measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize Firebase, Firestore, and Authentication
+// Initialize Firebase, Firestore, Authentication, and Functions
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const func = getFunctions(app);
 
-const googleProv = GoogleAuthProvider();
+const googleProv = new GoogleAuthProvider();
 
-// Initialize Emulators
-const authem = Auth(app);
-const firestore = Firestore(app);
-const functions = Function(app);
-
-if(window.location.hostname === 'localhost') {
-  console.log("Using Emulators...");
-  authem.useEmulator("localhost", 9099);
-  firestore.useEmulator("localhost", 8080);
-  functions.useEmulator("localhost", 5001);
+// Use emulators if using localhost
+try{
+  if(window.location.hostname === 'localhost') {
+    console.log("Using Emulators...");
+    connectAuthEmulator(auth, "http://localhost:9099");
+    connectFirestoreEmulator(db, "localhost", 8080);
+    connectFunctionsEmulator(func, "localhost", 5001);
+  }
 }
+catch(err){
+  console.log("Error connecting to emulators: ", err);
+}
+
 
 // Sign up with email and password
 const signupWithEmail = async (displayName, email, password) => {
@@ -43,6 +46,7 @@ const signupWithEmail = async (displayName, email, password) => {
     const user = wait.user;
 
     await updateProfile(user, {displayName: displayName});
+    return user;
   }
   catch(err){
     console.log(err);
@@ -56,6 +60,7 @@ const googleSignIn = async () => {
     const wait = await signInWithPopup(auth, googleProv);
     const user = wait.user;
     console.log('Email: ', user.email);
+    return user;
   }
   catch(err){
     console.log(err);
@@ -69,6 +74,7 @@ const loginWithEmail = async (email, password) => {
     const wait = await signInWithEmailAndPassword(auth, email, password);
     const user = wait.user;
     console.log('Email: ', user.email);
+    return user;
   }
   catch(err){
     console.log(err);
@@ -117,6 +123,7 @@ const logout = async () => {
 export {
   auth,
   db,
+  func,
   signupWithEmail,
   googleSignIn,
   loginWithEmail,
