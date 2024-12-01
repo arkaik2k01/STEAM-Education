@@ -3,7 +3,7 @@ import { initializeApp } from "firebase/app";
 
 // Imports for emulators and built-in functions
 import { getAuth, connectAuthEmulator, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, signOut, updateProfile } from 'firebase/auth';
-import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
+import { addDoc, deleteDoc, setDoc, doc, collection, connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
 import { connectFunctionsEmulator, getFunctions } from 'firebase/functions';
 
 // Firebase configuration
@@ -24,6 +24,7 @@ const db = getFirestore(app);
 const func = getFunctions(app);
 
 const googleProv = new GoogleAuthProvider();
+const classCollect = collection(db, 'class');
 
 // Use emulators if using localhost
 try{
@@ -38,6 +39,7 @@ catch(err){
   console.log("Error connecting to emulators: ", err);
 }
 
+// SEPARATE LOGIN/SIGNUP FUNCTIONS INTO A DIFFERENT FILE: AUTH.JS?
 
 // Sign up with email and password
 const signupWithEmail = async (displayName, email, password) => {
@@ -120,6 +122,74 @@ const logout = async () => {
   }
 }
 
+// SEPARATE CRUD FUNCTIONS INTO A DIFFERENT FILE: FIRESTORE.JS?
+
+// Randomized 6 digit class code
+function createClassCode() {
+  const min = 0;
+  const max = 999999;
+  const random = Math.random() * ((max-min) + 1);
+  return Math.floor(random);
+}
+
+// Add a class
+const addClass = async (name, studentlist) => {
+  const code = createClassCode();
+  try{
+    const newClass = await addDoc(classCollect, {
+      classCode: code,
+      className: name,
+      students: studentlist
+    })
+    console.log(newClass);
+    return name;
+  }
+  catch(err){
+    console.error(err);
+  }
+}
+
+// Delete a class by id
+const deleteClass = async (id) => {
+  try{
+    await deleteDoc(doc(db, 'class', id));
+  }
+  catch(err){
+    console.error(err);
+  }
+}
+
+// Add student to class list using student name
+const addStudent = async (name, students, id) => {
+  try{
+    students.push(name);
+    await setDoc(doc(db, 'class', id), {
+      students: students
+    })
+  }
+  catch(err){
+    console.error(err);
+  }
+}
+
+// Delete student from class list using student name
+const deleteStudent = async (name, students, id) => {
+  students.forEach((element, index) => {
+    if(element === name){
+      students.splice(index, 1);
+    }
+  })
+
+  try{
+    await setDoc(doc(db, 'class', id), {
+      students: students
+    })
+  }
+  catch(err){
+    console.error(err);
+  }
+}
+
 export {
   auth,
   db,
@@ -129,6 +199,10 @@ export {
   loginWithEmail,
   resetPassword,
   verifyEmail,
-  logout
+  logout,
+  addClass,
+  deleteClass,
+  addStudent,
+  deleteStudent
 };
 export default app;
