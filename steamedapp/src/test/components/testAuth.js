@@ -1,7 +1,7 @@
 import React from "react";
 
 // Import your firebase auth and functions here !!!
-import { signupWithEmail, loginWithEmail, addClass, deleteClass, addStudent, deleteStudent } from '../../firebase.js';
+import { signupWithEmail, loginWithEmail, addClass, deleteClass, addStudent, deleteStudent, createStudentProgress, deleteStudentProgress, updateStudentProgress, updateCurrentModuleandLesson } from '../../firebase.js';
 
 export const TestAuth = () => {
   // Register user by email: WORKS
@@ -60,28 +60,65 @@ export const TestAuth = () => {
     }
   };
 
-  // Add a student by name: WORKS
-  const handleAddStudent = async () => {
+  // Add a student by name and initialize student progress: WORKS
+  const handleAddStudentandProgress = async () => {
     const id = 'PvweufFH3IDvb62iLVvF';
     const students = ['Kate Grimes', 'John Smith'];
     const name = 'Sam Jones';
     try{
       await addStudent(name, students, id);
-      alert('Student added successfully!');
+      console.log('Student added successfully!');
+
+      await createStudentProgress(
+        id,
+        name,
+        1,
+        1
+      );
+      alert('Student added and student progress created!');
     }
     catch(err){
       console.error(err);
     }
   }
 
-  // Delete a student by name: WORKS
-  const handleDeleteStudent = async () => {
+  // Delete a student by name and, by extension, their progress: WORKS
+  const handleDeleteStudentandProgress = async () => {
     const id = 'PvweufFH3IDvb62iLVvF';
     const students = ['Kate Grimes', 'John Smith', 'Sam Jones'];
     const name = 'Sam Jones';
     try{
       await deleteStudent(name, students, id);
-      alert('Student deleted successfully!');
+      console.log('Student deleted successfully!');
+
+      await deleteStudentProgress(id,name);
+      alert('Student and student progress deleted!');
+    }
+    catch(err){
+      console.error(err);
+    }
+  }
+
+  // Updates a student's percentage of progress: WORKS
+  const handleUpdateProgress = async () => {
+    const id = 'PvweufFH3IDvb62iLVvF';
+    const name = 'John Smith';
+    try{
+      await updateStudentProgress(id,name);
+      alert(name + "'s progress has been updated!");
+    }
+    catch(err){
+      console.error(err);
+    }
+  }
+
+  // Updates a student's current module and lesson: WORKS
+  const handleUpdateCurrentModuleandLesson = async () => {
+    const id = 'PvweufFH3IDvb62iLVvF';
+    const name = 'John Smith';
+    try{
+      await updateCurrentModuleandLesson(id,name);
+      alert(name + "'s current module and lesson has been updated!");
     }
     catch(err){
       console.error(err);
@@ -102,11 +139,17 @@ export const TestAuth = () => {
       <button onClick={handleDeleteClass} style={{ padding: "10px 20px", margin: "10px" }}>
         Delete Class
       </button>
-      <button onClick={handleAddStudent} style={{ padding: "10px 20px", margin: "10px" }}>
-        Add Student
+      <button onClick={handleAddStudentandProgress} style={{ padding: "10px 20px", margin: "10px" }}>
+        Add Student/Progress
       </button>
-      <button onClick={handleDeleteStudent} style={{ padding: "10px 20px", margin: "10px" }}>
-        Delete Student
+      <button onClick={handleDeleteStudentandProgress} style={{ padding: "10px 20px", margin: "10px" }}>
+        Delete Student/Progress
+      </button>
+      <button onClick={handleUpdateProgress} style={{ padding: "10px 20px", margin: "10px" }}>
+        Update Student Progress
+      </button>
+      <button onClick={handleUpdateCurrentModuleandLesson} style={{ padding: "10px 20px", margin: "10px" }}>
+        Update Current Module and Lesson
       </button>
     </div>
   );

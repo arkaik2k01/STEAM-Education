@@ -3,7 +3,7 @@ import { initializeApp } from "firebase/app";
 
 // Imports for emulators and built-in functions
 import { getAuth, connectAuthEmulator, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, signOut, updateProfile } from 'firebase/auth';
-import { addDoc, deleteDoc, setDoc, doc, collection, connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
+import { addDoc, deleteDoc, setDoc, updateDoc, getDocs, doc, collection, query, connectFirestoreEmulator, getFirestore, where } from 'firebase/firestore';
 import { connectFunctionsEmulator, getFunctions } from 'firebase/functions';
 
 // Firebase configuration
@@ -24,7 +24,10 @@ const db = getFirestore(app);
 const func = getFunctions(app);
 
 const googleProv = new GoogleAuthProvider();
+
+// Access collections
 const classCollect = collection(db, 'class');
+
 
 // Use emulators if using localhost
 try{
@@ -190,6 +193,175 @@ const deleteStudent = async (name, students, id) => {
   }
 }
 
+function getProgressClass(classid){
+  const classDoc = doc(db, 'class', classid);
+  const progressCollect = collection(classDoc, 'studentProgress');
+  return progressCollect;
+}
+
+// Create a student's progress
+const createStudentProgress = async(classid, studentName, moduleNum, LessonNum) => {
+  const progressCollect = getProgressClass(classid);
+  try{
+    const newStudentProgress = await addDoc(progressCollect, {
+      currentModule: moduleNum,
+      currentLesson: LessonNum,
+      name: studentName,
+      percentage: 0
+    })
+    console.log(newStudentProgress);
+  }
+  catch(err){
+    console.error(err);
+  }
+}
+
+// Delete a student's progress 
+const deleteStudentProgress = async(classid, name) => {
+  const progressCollect = getProgressClass(classid);
+  try{
+    const q = query(progressCollect, where('name', '==', name));
+    const snapshot = await getDocs(q);
+    snapshot.forEach((doc) => {
+      deleteDoc(doc.ref);
+    })
+  }
+  catch(err){
+    console.error(err);
+  }
+}
+
+// Update a student's progress using their name
+const updateStudentProgress = async(classid, name) => {
+  const progressCollect = getProgressClass(classid);
+  try{
+    const q = query(progressCollect, where('name', '==', name));
+    const snapshot = await getDocs(q);
+
+    const totalLessons = 36;
+    let percentage = 0;
+
+    snapshot.forEach(async (doc) => {
+      var data = doc.data();
+      
+      // get new percentage (0%-99%)
+      if(data.currentModule === 1){
+        percentage = (data.currentLesson - 1) / totalLessons;
+        percentage = Math.round(percentage * 100);
+      }
+      else if(data.currentModule === 2){
+        percentage = ((12 + data.currentLesson) - 1) / totalLessons;
+        percentage = Math.round(percentage * 100);
+      }
+      else if(data.currentModule === 3){
+        percentage = ((21 + data.currentLesson) - 1) / totalLessons;
+        percentage = Math.round(percentage * 100);
+      }
+      else if(data.currentModule === 4){
+        percentage = ((25 + data.currentLesson) - 1) / totalLessons;
+        percentage = Math.round(percentage * 100);
+      }
+      else{
+        percentage = ((31 + data.currentLesson) - 1) / totalLessons;
+        percentage = Math.round(percentage * 100);
+      }
+
+      // get new percentage (100%)
+      if(data.currentModule === 5 && data.currentLesson === 5){
+        percentage = 100;
+      }
+
+      // update document
+      await updateDoc(doc.ref, {
+        percentage: percentage
+      });
+
+    })
+  }
+  catch(err){
+    console.error(err);
+  }
+}
+
+// Update a student's current module and lesson - OnClick
+const updateCurrentModuleandLesson = async(classid, name) => {
+  const progressCollect = getProgressClass(classid);
+  try{
+    const q = query(progressCollect, where('name', '==', name));
+    const snapshot = await getDocs(q);
+
+    let lesson = 0;
+    let module = 0;
+
+    snapshot.forEach(async (doc) => {
+      var data = doc.data();
+      var docRef = doc.ref;
+
+      if(data.currentModule === 1){
+        if(data.currentLesson < 12){
+          module = 1;
+          lesson = data.currentLesson + 1;
+        }
+        else{
+          module = data.currentModule + 1;
+          lesson = 1;
+        }
+      }
+      else if(data.currentModule === 2){
+        if(data.currentLesson < 9){
+          module = 2;
+          lesson = data.currentLesson + 1;
+        }
+        else{
+          module = data.currentModule + 1;
+          lesson = 1;
+        }
+      }
+      else if(data.currentModule === 3){
+        if(data.currentLesson < 4){
+          module = 3;
+          lesson = data.currentLesson + 1;
+
+        }
+        else{
+          module = data.currentModule + 1;
+          lesson = 1;
+        }
+      }
+      else if(data.currentModule === 4){
+        if(data.currentLesson < 6){
+          module = 4;
+          lesson = data.currentLesson + 1;
+        }
+        else{
+          module = data.currentModule + 1;
+          lesson = 1;
+        }
+      }
+      else{
+        if(data.currentLesson < 5){
+          module = 5;
+          lesson = data.currentLesson + 1;
+        }
+        else{
+          module = data.currentModule + 1;
+          lesson = 1;
+        }
+      }
+
+      // update document
+      await updateDoc(docRef, {
+        currentModule: module,
+        currentLesson: lesson
+      })
+      
+    })
+  }
+  catch(err){
+    console.error(err);
+  }
+}
+
 export {
   auth,
   db,
@@ -203,6 +375,10 @@ export {
   addClass,
   deleteClass,
   addStudent,
-  deleteStudent
+  deleteStudent,
+  createStudentProgress,
+  deleteStudentProgress,
+  updateStudentProgress,
+  updateCurrentModuleandLesson
 };
 export default app;
