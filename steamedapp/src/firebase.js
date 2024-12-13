@@ -59,6 +59,21 @@ const signupWithEmail = async (displayName, email, password) => {
   }
 }
 
+// Update a user's profile
+const updateUserProfile = async (displayName, email, password, photoURL) => {
+  try{
+    await updateProfile(auth.currentUser, {
+      displayName: displayName,
+      email: email,
+      password: password,
+      photoURL: photoURL
+    })
+  }
+  catch(err){
+    console.error(err);
+  }
+}
+
 // Sign in with Google account
 const googleSignIn = async () => {
   try{
@@ -367,6 +382,7 @@ export {
   db,
   func,
   signupWithEmail,
+  updateUserProfile,
   googleSignIn,
   loginWithEmail,
   resetPassword,

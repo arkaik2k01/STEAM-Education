@@ -1,7 +1,7 @@
 import React from "react";
 
 // Import your firebase auth and functions here !!!
-import { signupWithEmail, loginWithEmail, addClass, deleteClass, addStudent, deleteStudent, createStudentProgress, deleteStudentProgress, updateStudentProgress, updateCurrentModuleandLesson } from '../../firebase.js';
+import { signupWithEmail, loginWithEmail, addClass, deleteClass, addStudent, deleteStudent, createStudentProgress, deleteStudentProgress, updateStudentProgress, updateCurrentModuleandLesson, updateUserProfile } from '../../firebase.js';
 
 export const TestAuth = () => {
   // Register user by email: WORKS
@@ -32,6 +32,21 @@ export const TestAuth = () => {
       alert("Could not login!");
     }
   };
+
+  // Update a user's profile:
+  const handleUpdateProfile = async () => {
+    try{
+      const displayName = 'Updated Name';
+      const email = "updated@example.com";
+      const password = "updatepassword";
+      const photoURL = "";
+      await updateUserProfile(displayName,email,password,photoURL);
+      alert(displayName + "'s profile updated successfully!");
+    }
+    catch(err){
+      console.error(err);
+    }
+  }
 
   // Add class to collection: WORKS
   const handleAddClass = async () => {
@@ -132,6 +147,9 @@ export const TestAuth = () => {
       </button>
       <button onClick={handleLogin} style={{ padding: "10px 20px", margin: "10px" }}>
         Login
+      </button>
+      <button onClick={handleUpdateProfile} style={{ padding: "10px 20px", margin: "10px" }}>
+        Update Profile
       </button>
       <button onClick={handleAddClass} style={{ padding: "10px 20px", margin: "10px" }}>
         Add Class
