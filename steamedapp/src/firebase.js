@@ -74,7 +74,7 @@ const updateUserProfile = async (displayName, email, password, photoURL) => {
   }
 }
 
-// Sign in with Google account
+// Sign in with Google account - NOT TESTED
 const googleSignIn = async () => {
   try{
     const wait = await signInWithPopup(auth, googleProv);
@@ -102,7 +102,7 @@ const loginWithEmail = async (email, password) => {
   }
 }
 
-// Send password reset to email
+// Send password reset to email - NOT TESTED
 const resetPassword = async (email) => {
   try{
     await sendPasswordResetEmail(auth, email);
@@ -115,7 +115,7 @@ const resetPassword = async (email) => {
   }
 }
 
-// Send email verification 
+// Send email verification - NOT TESTED
 const verifyEmail = async (user) => {
   try{
     await sendEmailVerification(user);
