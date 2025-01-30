@@ -1,8 +1,8 @@
 import React from 'react';
-import { UseDraggable } from '@dnd-kit/core';
+import { useDraggable } from '@dnd-kit/core';
 
-const DraggableKeyword = ({ keyword, id }) => {
-    const { attributes, listeners, setNodeRef, transform } = UseDraggable({
+export const DraggableKeyword = ({ keyword, id }) => {
+    const { attributes, listeners, setNodeRef, transform } = useDraggable({
         id: id,
         data: { keyword },
     });
@@ -17,7 +17,9 @@ const DraggableKeyword = ({ keyword, id }) => {
             ref={setNodeRef}
             {...listeners}
             {...attributes}
-            className='px-2 py-1 bg-blue-100 rounded cursor-move select-none'
+            className='px-3 py-2 bg-white border border-blue-200 rounded-md 
+                 cursor-move select-none shadow-sm hover:shadow-md 
+                 transition-shadow duration-200'
             style={style}
         >
             {keyword}

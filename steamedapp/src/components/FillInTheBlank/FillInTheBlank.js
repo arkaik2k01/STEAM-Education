@@ -5,27 +5,37 @@ import { DroppableText } from './DroppableText';
 import { fetchFIBContent } from '../util/fetchFIBContent';
 
 const FillInTheBlank = () => {
+    // **** DEBUG ****
+    const testData = {
+        text: 'This is a text ____ with a fill in the ____ question using drag and ____.',
+        keywords: ['sentence', 'blank', 'drop'],
+    }
+
     // State to store the keywords
-    const [content, setContent] = useState({ text: '', keywords: []});
+    const [content, setContent] = useState({ text: '', keywords: [] });
     const [answers, setAnswers] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     //On mount, fetch content. Finally, set our loading to done
-    useEffect(()=> {
-        const loadContent = async () => {
-            try {
-                const data = await fetchFIBContent(''); // Add endpoint
-                setContent(data);
-            }
-            catch (error) {
-                setError(error);
-            }
-            finally {
-                setLoading(false);
-            }
-    }
-    loadContent();
+    useEffect(() => {
+        // **** DEBUG ****
+        setContent(testData);
+        setLoading(false);
+
+        // const loadContent = async () => {
+        //     try {
+        //         const data = await fetchFIBContent(''); // Add endpoint
+        //         setContent(data);
+        //     }
+        //     catch (error) {
+        //         setError(error);
+        //     }
+        //     finally {
+        //         setLoading(false);
+        //     }
+        // }
+        // loadContent();
     }, []);
 
     //Handle drag event end
@@ -52,7 +62,8 @@ const FillInTheBlank = () => {
     * within it. DroppableText represents the drop zones for our DraggableKeywords. We map through all
     * textSegments, stopping at every blank to add a DroppableText component. We add draggableKeywords
     * to the side of the text. */
-    <DndContext closestCenter={closestCenter} onDragEnd={handleDragEnd}>
+    return
+    (<DndContext closestCenter={closestCenter} onDragEnd={handleDragEnd}>
         {/* Create table to hold contents */}
         <div className='grid grid-cols-1 md:grid-cols-2 gap-6 p-6 min-h-[400px]'>
             {/* Keywords, left side */}
@@ -73,20 +84,23 @@ const FillInTheBlank = () => {
                 <h3 className="text-lg font-semibold mb-4 border-b pb-2">
                     Fill in the Blanks
                 </h3>
-                <div className="text-lg leading-relaxed"></div>
-                {textSegments.map((segment, index) => (
-              <React.Fragment key={`segment-${index}`}>
-                {segment}
-                {index < textSegments.length - 1 && (
-                  <DroppableBlank
-                    id={`blank-${index}`}
-                    value={answers[`blank-${index}`]}
-                  />
-                )}
-              </React.Fragment>
-            ))}
-            </div>
+                <div className="text-lg leading-relaxed">
+                    {textSegments.map((segment, index) => (
+                        <React.Fragment key={`segment-${index}`}>
+                            {segment}
+                            {index < textSegments.length - 1 && (
+                                <DroppableText
+                                    id={`blank-${index}`}
+                                    value={answers[`blank-${index}`]}
+                                />
+                            )}
+                        </React.Fragment>
+                    ))}
+                </div>
             </div>
         </div>
     </DndContext>
+    );
 };
+
+export default FillInTheBlank;
