@@ -6,9 +6,9 @@ function MonacoPythonEditor() {
     const editorRef = useRef(null);
 
     //Fetch module information form the backend when the editor mounts
-    const fetchModuleContent = async () => {
+    const fetchCodeContent = async (url) => {
         try {
-            const response = await fetch('BACK END URL END POINT HERE'); // <-----
+            const response = await fetch(url); 
             if (!response.ok) {
                 throw new Error('Failed to connect.');
             }
@@ -25,7 +25,7 @@ function MonacoPythonEditor() {
     //On mount
     useEffect(() => {
         //Fetch module and load from back end
-        fetchModuleContent();
+fetchCodeContent();
     }, []);
 }
 

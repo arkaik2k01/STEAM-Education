@@ -4,7 +4,7 @@ export const testData = {
     keywords: ['sentence', 'blank', 'drop'],
 }
 
-// Gathers text content from the server
+// Gathers text content from the server, given a url
 export const fetchFIBContent = async (url) => {
     try {
         const response = await fetch(url);

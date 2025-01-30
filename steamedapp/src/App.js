@@ -1,6 +1,6 @@
 import './App.css';
 import FillInTheBlank from './components/FillInTheBlank/FillInTheBlank';
-import { MCQuestion } from './components/MCQuestion';
+import { MCQuestion } from './components/MCQuestion/MCQuestion';
 
 function App() {
   return (
