@@ -1,3 +1,9 @@
+//  *** DEBUG ***
+export const testData = {
+    text: 'This is a text ____ with a fill in the ____ question using drag and ____.',
+    keywords: ['sentence', 'blank', 'drop'],
+}
+
 // Gathers text content from the server
 export const fetchFIBContent = async (url) => {
     try {

@@ -2,15 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { DraggableKeyword } from './DraggableKeyword';
 import { DroppableText } from './DroppableText';
-import { fetchFIBContent } from '../util/fetchFIBContent';
+import { fetchFIBContent, testData } from '../util/fetchFIBContent';
 
 const FillInTheBlank = () => {
-    // **** DEBUG ****
-    const testData = {
-        text: 'This is a text ____ with a fill in the ____ question using drag and ____.',
-        keywords: ['sentence', 'blank', 'drop'],
-    }
-
     // State to store the keywords
     const [content, setContent] = useState({ text: '', keywords: [] });
     const [answers, setAnswers] = useState({});
@@ -62,24 +56,11 @@ const FillInTheBlank = () => {
     * within it. DroppableText represents the drop zones for our DraggableKeywords. We map through all
     * textSegments, stopping at every blank to add a DroppableText component. We add draggableKeywords
     * to the side of the text. */
-    return
-    (<DndContext closestCenter={closestCenter} onDragEnd={handleDragEnd}>
+    return(
+    <DndContext closestCenter={closestCenter} onDragEnd={handleDragEnd}>
         {/* Create table to hold contents */}
         <div className='grid grid-cols-1 md:grid-cols-2 gap-6 p-6 min-h-[400px]'>
-            {/* Keywords, left side */}
-            <div className='bg-gray-50 rounded-lg p-6 shadow-sm'>
-                <h3 className='text-lg font-semibold mb-4 border-b pb-2'>
-                    Answers
-                </h3>
-                <div className='flex gap-4 flex-wrap'>
-                    {/* Map through answers and create DroppableKeyword components */}
-                    {content.keywords.map((keyword, index) => (
-                        <DraggableKeyword keyword={keyword} id={`keyword-${index}`} key={index} />
-                    ))}
-                </div>
-            </div>
-
-            {/* Text, right side */}
+            {/* Text, left side */}
             <div className='bg-gray-50 rounded-lg p-6 shadow-sm'>
                 <h3 className="text-lg font-semibold mb-4 border-b pb-2">
                     Fill in the Blanks
@@ -95,6 +76,19 @@ const FillInTheBlank = () => {
                                 />
                             )}
                         </React.Fragment>
+                    ))}
+                </div>
+            </div>
+
+            {/* Keywords, right side */}
+            <div className='bg-gray-50 rounded-lg p-6 shadow-sm'>
+                <h3 className='text-lg font-semibold mb-4 border-b pb-2'>
+                    Answers
+                </h3>
+                <div className='flex gap-4 flex-wrap'>
+                    {/* Map through answers and create DroppableKeyword components */}
+                    {content.keywords.map((keyword, index) => (
+                        <DraggableKeyword keyword={keyword} id={`keyword-${index}`} key={index} />
                     ))}
                 </div>
             </div>
