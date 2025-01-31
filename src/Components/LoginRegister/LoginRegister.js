@@ -94,92 +94,30 @@ const LoginRegister = () => {
     return (
     /* Login */
     <div>
-        <div className='titleContainer'>
-        <div className="title">STEAM Education</div>
+        <div className='bg-gray-100 shadow=lg flex flex-row justify-center'>
+        <div className="text-6xl font-extrabold text-black p-[30px] mb-[-100px]">STEAM Education</div>
         </div>
-        <div style={{ display: 'flex'}}>
-            <div style={{ flex: 1}}>
-            <div className='container'>
-            <div className="header">
-                <div className="text">Log In</div>
-                <div className="underline"></div>
+        <div className="flex justify-center items-center min-h-screen bg-gray-100 p-10 gap-20">
+            {/* Login Container */}
+            <div className="bg-white shadow-lg rounded-lg p-8 w-96 flex flex-col items-center">
+                <h2 className="text-3xl font-bold mb-4">Log In</h2>
+                <input type="email" placeholder="Email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} className="w-full mb-3 p-2 border rounded" />
+                <input type="password" placeholder="Password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} className="w-full mb-3 p-2 border rounded" />
+                <button onClick={handleLogin} className="w-full bg-blue-600 text-white py-2 rounded">Log In</button>
+                <p className="text-sm text-blue-500 mt-2 cursor-pointer" onClick={handleForgotPassword}>Forgot Password?</p>
+                <p className="text-sm mt-3">Or</p>
+                <button onClick={handleGoogleLogin} className="w-full bg-red-500 text-white py-2 rounded mt-2">Sign In with Google</button>
             </div>
-            <div className="inputs">
-            <div className="input">
-                <input type="email" placeholder="Email" 
-                value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)}
-                />
-            </div>
-            <div className="input">
-                <input type="password" placeholder="Password" 
-                value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} 
-                />
-            </div>
-            <div 
-                    className="forgot-password"
-                    onClick={handleForgotPassword}
-                > Forgot Password?
-                    
-                </div>
-            </div>
-            <div className="submit-container">
-                <div className="submit" 
-                onClick={handleLogin}
-                >Log In</div>
-            </div>
-            <div className="or-text">Or</div>
-            <div className="google-login-container">
-                            <button className="google-login-button" onClick={handleGoogleLogin}>
-                                Sign In with Google
-                            </button>
-                        </div>
-        </div>
-     </div>
 
-     {/*Register */}
-            <div style={{flex:1}}>
-            <div className='container'>
-            <div className="header">
-                <div className="text">Register</div>
-                <div className="underline"></div>
-            </div>
-            <div className="inputs">
-            <div className="input">
-                <input type="username" placeholder="Username"
-                 value={registerUsername} onChange={(e) => setRegisterUsername(e.target.value)} 
-                 />
-            </div>
-            <div className="input">
-                <input type="email" placeholder="Email" 
-                value={registerEmail} onChange={(e) => setRegisterEmail(e.target.value)} 
-                />
-            </div>
-            <div className="input">
-                <input type="password" placeholder="Password" 
-                value={registerPassword} onChange={(e) => setRegisterPassword(e.target.value)} 
-                />
-            </div>
-            <div className="input">
-                <input type="password" placeholder="Confirm Password" 
-                value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                 />
-            </div>
-            <div className="dropdown">
-                            <Select
-                                name="form-field-name"
-                                value={selectedRole} // default value (Student)
-                                options={options}
-                                onChange={handleRoleChange}
-                                placeholder="Select Role"
-                            />
-                        </div>
-            </div>
-            <div className="submit-container">
-                <div className="submit"
-                 onClick = {handleRegister}
-                 >Register</div>
-            </div>
-        </div>
+            {/* Register Container */}
+            <div className="bg-white shadow-lg rounded-lg p-8 w-96 flex flex-col items-center">
+                <h2 className="text-3xl font-bold mb-4">Register</h2>
+                <input type="text" placeholder="Username" value={registerUsername} onChange={(e) => setRegisterUsername(e.target.value)} className="w-full mb-3 p-2 border rounded" />
+                <input type="email" placeholder="Email" value={registerEmail} onChange={(e) => setRegisterEmail(e.target.value)} className="w-full mb-3 p-2 border rounded" />
+                <input type="password" placeholder="Password" value={registerPassword} onChange={(e) => setRegisterPassword(e.target.value)} className="w-full mb-3 p-2 border rounded" />
+                <input type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full mb-3 p-2 border rounded" />
+                <Select options={options} value={selectedRole} onChange={handleRoleChange} className="w-full mb-3" />
+                <button onClick={handleRegister} className="w-full bg-blue-600 text-white py-2 rounded">Register</button>
             </div>
         </div>
         </div>
