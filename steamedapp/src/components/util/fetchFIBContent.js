@@ -1,7 +1,8 @@
 //  *** DEBUG ***
 export const testData = {
-    text: 'This is a text ____ with a fill in the ____ question using drag and ____.',
-    keywords: ['sentence', 'blank', 'drop'],
+    text: 'This is a text ____ with a fill in the ____ question using drag and ____.', // Blanks MUST be 4 underscores
+    keywords: ['blank', 'sentence', 'drop'], // Keywords to drag
+    answer_key: ['sentence', 'blank', 'drop'] // Correct order of keywords
 }
 
 // Gathers text content from the server, given a url
