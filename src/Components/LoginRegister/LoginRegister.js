@@ -1,20 +1,16 @@
-import React from 'react'
-import './LoginRegister.css'
+import React, { useState } from 'react';
+import './LoginRegister.css';
 import Select from 'react-select';
-import { useState } from 'react';
-import {useNavigate} from 'react-router-dom';
-
+import { useNavigate } from 'react-router-dom';
 import {
-    signupWithEmail,
-    loginWithEmail,
-    googleSignIn,
-    verifyEmail,
-    resetPassword,
-} from '../DatabaseFunctions/firebase.js';
+    createStudentAccount,
+    createTeacherAccount
+} from '../DatabaseFunctions/auth.js';
+import {authService} from '../DatabaseFunctions/auth.js';
 
 const options = [
-    {value: 'Student', label: 'Student'},
-    {value: 'Teacher', label: 'Teacher'}
+    { value: 'Student', label: 'Student' },
+    { value: 'Teacher', label: 'Teacher' }
 ];
 
 const LoginRegister = () => {
@@ -25,18 +21,24 @@ const LoginRegister = () => {
     const [registerEmail, setRegisterEmail] = useState('');
     const [registerPassword, setRegisterPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [isLogin, setIsLogin] = useState(true);
+
+    const { googleSignIn } = authService;
+    const {resetPassword} = authService;
+    const {signupWithEmail} = authService;
+    const {verifyEmail} = authService;
+    const {loginWithEmail} = authService;
 
     const navigate = useNavigate();
 
-    const handleRoleChange = (selectedRole) => {
-        setSelectedRole(selectedRole);
+    const handleToggle = () => {
+        setIsLogin(!isLogin);
     };
 
     const handleLogin = async () => {
         try {
             const user = await loginWithEmail(loginEmail, loginPassword);
             if (user) {
-                console.log('Logged in user:', user);
                 navigate('/Dashboard');
             }
         } catch (err) {
@@ -48,34 +50,10 @@ const LoginRegister = () => {
         try {
             const user = await googleSignIn();
             if (user) {
-                console.log('Google login successful for user:', user);
                 navigate('/Dashboard');
             }
         } catch (err) {
             console.error('Google login failed:', err);
-        }
-    };
-
-    const handleRegister = async () => {
-        if (registerPassword !== confirmPassword) {
-            alert('Passwords do not match!');
-            return;
-        }
-        try {
-            console.log("starting registration...");
-            const user = await signupWithEmail(registerUsername, registerEmail, registerPassword);
-            console.log('Registered user: ', user);
-
-            if (user) {
-                await verifyEmail(user);
-                alert("registration successful! Verification email sent");
-                navigate('/Dashboard');
-            }
-            else {
-                console.error("User object is undefined!");
-            }
-        } catch (err) {
-            console.error('Registration failed: ', err)
         }
     };
 
@@ -91,37 +69,78 @@ const LoginRegister = () => {
         }
     };
 
+    const handleRegister = async () => {
+        if (registerPassword !== confirmPassword) {
+            alert('Passwords do not match!');
+            return;
+        }
+    
+        try {
+            let user;
+            if (selectedRole.value === 'Student') {
+                user = await createStudentAccount(registerEmail, registerPassword, {
+                    username: registerUsername
+                });
+            } else if (selectedRole.value === 'Teacher') {
+                user = await createTeacherAccount(registerEmail, registerPassword, {
+                    username: registerUsername
+                });
+             } 
+             //else {
+            //     user = await signupWithEmail(registerUsername, registerEmail, registerPassword);
+            // }
+    
+            if (user) {
+                await verifyEmail(user);
+                alert("Registration successful! Verification email sent");
+                navigate('/Dashboard');
+            }
+        } catch (err) {
+            console.error('Registration failed: ', err);
+        }
+    };
+
     return (
-    /* Login */
-    <div>
-        <div className='bg-gray-100 shadow=lg flex flex-row justify-center'>
-        <div className="text-6xl font-extrabold text-black p-[30px] mb-[-100px]">STEAM Education</div>
-        </div>
-        <div className="flex justify-center items-center min-h-screen bg-gray-100 p-10 gap-20">
-            {/* Login Container */}
+        <div className="flex flex-col items-center min-h-screen bg-gray-100 p-10">
+            <h1 className="text-4xl font-bold mb-6">STEAM Education</h1>
             <div className="bg-white shadow-lg rounded-lg p-8 w-96 flex flex-col items-center">
-                <h2 className="text-3xl font-bold mb-4">Log In</h2>
-                <input type="email" placeholder="Email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} className="w-full mb-3 p-2 border rounded" />
-                <input type="password" placeholder="Password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} className="w-full mb-3 p-2 border rounded" />
-                <button onClick={handleLogin} className="w-full bg-blue-600 text-white py-2 rounded">Log In</button>
-                <p className="text-sm text-blue-500 mt-2 cursor-pointer" onClick={handleForgotPassword}>Forgot Password?</p>
-                <p className="text-sm mt-3">Or</p>
-                <button onClick={handleGoogleLogin} className="w-full bg-red-500 text-white py-2 rounded mt-2">Sign In with Google</button>
-            </div>
+                <div className="flex justify-between w-full mb-4">
+                    <button 
+                        className={`flex-1 py-2 text-lg font-semibold border-b-2 ${isLogin ? 'border-blue-600 text-blue-600' : 'border-gray-300 text-gray-500'}`} 
+                        onClick={() => setIsLogin(true)}
+                    >
+                        Log In
+                    </button>
+                    <button 
+                        className={`flex-1 py-2 text-lg font-semibold border-b-2 ${!isLogin ? 'border-blue-600 text-blue-600' : 'border-gray-300 text-gray-500'}`} 
+                        onClick={() => setIsLogin(false)}
+                    >
+                        Register
+                    </button>
+                </div>
 
-            {/* Register Container */}
-            <div className="bg-white shadow-lg rounded-lg p-8 w-96 flex flex-col items-center">
-                <h2 className="text-3xl font-bold mb-4">Register</h2>
-                <input type="text" placeholder="Username" value={registerUsername} onChange={(e) => setRegisterUsername(e.target.value)} className="w-full mb-3 p-2 border rounded" />
-                <input type="email" placeholder="Email" value={registerEmail} onChange={(e) => setRegisterEmail(e.target.value)} className="w-full mb-3 p-2 border rounded" />
-                <input type="password" placeholder="Password" value={registerPassword} onChange={(e) => setRegisterPassword(e.target.value)} className="w-full mb-3 p-2 border rounded" />
-                <input type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full mb-3 p-2 border rounded" />
-                <Select options={options} value={selectedRole} onChange={handleRoleChange} className="w-full mb-3" />
-                <button onClick={handleRegister} className="w-full bg-blue-600 text-white py-2 rounded">Register</button>
+                {isLogin ? (
+                    <>
+                        <input type="email" placeholder="Email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} className="w-full mb-3 p-2 border rounded" />
+                        <input type="password" placeholder="Password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} className="w-full mb-3 p-2 border rounded" />
+                        <button onClick={handleLogin} className="w-full bg-blue-600 text-white py-2 rounded">Log In</button>
+                        <p className="text-sm text-blue-500 mt-2 cursor-pointer" onClick={handleForgotPassword}>Forgot Password?</p>
+                        <p className="text-sm mt-3">Or</p>
+                        <button onClick={handleGoogleLogin} className="w-full bg-red-500 text-white py-2 rounded mt-2">Sign In with Google</button>
+                    </>
+                ) : (
+                    <>
+                        <input type="text" placeholder="Username" value={registerUsername} onChange={(e) => setRegisterUsername(e.target.value)} className="w-full mb-3 p-2 border rounded" />
+                        <input type="email" placeholder="Email" value={registerEmail} onChange={(e) => setRegisterEmail(e.target.value)} className="w-full mb-3 p-2 border rounded" />
+                        <input type="password" placeholder="Password" value={registerPassword} onChange={(e) => setRegisterPassword(e.target.value)} className="w-full mb-3 p-2 border rounded" />
+                        <input type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full mb-3 p-2 border rounded" />
+                        <Select options={options} value={selectedRole} onChange={setSelectedRole} className="w-full mb-3" />
+                        <button onClick={handleRegister} className="w-full bg-blue-600 text-white py-2 rounded">Register</button>
+                    </>
+                )}
             </div>
         </div>
-        </div>
-    )
-}
+    );
+};
 
-export default LoginRegister
+export default LoginRegister;
