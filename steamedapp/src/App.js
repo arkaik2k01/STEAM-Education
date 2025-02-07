@@ -1,14 +1,17 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import TeacherRegistration from './components/TeacherRegistration';
 import StudentRegistration from './components/StudentRegistration';
 import SignIn from './components/auth/SignIn';
 import TeacherDashboard from './components/dashboard/TeacherDashboard';
 import StudentDashboard from './components/dashboard/StudentDashboard';
 import Home from './components/Home';
-import Navigation from './components/Navigation';
+import Navigation from './components/Navigation/Navigation';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
+import { CreateClass } from './components/dashboard/CreateClass';
+import { JoinClass } from './components/dashboard/JoinClass';
+import { Profile } from './components/Profile';
 
 function App() {
   return (
@@ -25,7 +28,7 @@ function App() {
 
             {/* Protected Routes */}
             <Route 
-              path="/teacher-dashboard/*" 
+              path="/dashboard" 
               element={
                 <ProtectedRoute role="teacher">
                   <TeacherDashboard />
@@ -33,10 +36,34 @@ function App() {
               } 
             />
             <Route 
-              path="/student-dashboard/*" 
+              path="/create-class" 
+              element={
+                <ProtectedRoute role="teacher">
+                  <CreateClass />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard" 
               element={
                 <ProtectedRoute role="student">
                   <StudentDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/join-class" 
+              element={
+                <ProtectedRoute role="student">
+                  <JoinClass />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               } 
             />
