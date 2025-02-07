@@ -1,7 +1,7 @@
 import './App.css';
-import { FillInTheBlank } from './components/FillInTheBlank/FillInTheBlank';
-import { MCQuestion } from './components/MCQuestion/MCQuestion';
-import { MonPyEditor } from './components/MonPyEditor';
+import { FillInTheBlank } from './components/ModulePage/FillInTheBlank/FillInTheBlank';
+import { MCQuestion } from './components/ModulePage/MCQuestion/MCQuestion';
+import { MonPyEditor } from './components/ModulePage/MonPyEditor';
 
 function App() {
   return (

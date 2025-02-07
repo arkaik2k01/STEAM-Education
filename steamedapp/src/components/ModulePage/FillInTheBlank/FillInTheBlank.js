@@ -3,7 +3,7 @@ import { DndContext, closestCenter } from '@dnd-kit/core';
 import { DraggableKeyword } from './DraggableKeyword';
 import { DroppableText } from './DroppableText';
 import { SubmitButton } from './SubmitButton';
-import { fetchFIBContent, testData } from '../util/fetchFIBContent';
+import { fetchFIBContent, testData } from '../../util/fetchFIBContent';
 
 export const FillInTheBlank = () => {
     // State to store the keywords

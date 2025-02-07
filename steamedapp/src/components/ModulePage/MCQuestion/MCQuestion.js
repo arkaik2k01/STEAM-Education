@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { testData, fetchMCQuestion } from "../util/fetchMCQuestion";
+import { testData, fetchMCQuestion } from "../../util/fetchMCQuestion";
 import { MCAnswers } from "./MCAnswers";
 
 // Endpoint URL is assigned on the module page
