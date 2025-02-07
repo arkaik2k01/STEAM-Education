@@ -1,6 +1,7 @@
 import './App.css';
-import FillInTheBlank from './components/FillInTheBlank/FillInTheBlank';
+import { FillInTheBlank } from './components/FillInTheBlank/FillInTheBlank';
 import { MCQuestion } from './components/MCQuestion/MCQuestion';
+import { MonPyEditor } from './components/MonPyEditor';
 
 function App() {
   return (
@@ -9,8 +10,11 @@ function App() {
       <FillInTheBlank />
       <h1 className='text-2xl font-bold mb-6'>Multiple Choice Question</h1>
       <MCQuestion />
+      <h1 className='text-2xl font-bold mb-6'>Code Editor</h1>
+      <MonPyEditor loadEndpoint="" />
     </div>
   );
 }
+
 
 export default App;

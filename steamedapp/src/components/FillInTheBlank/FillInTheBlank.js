@@ -5,7 +5,7 @@ import { DroppableText } from './DroppableText';
 import { SubmitButton } from './SubmitButton';
 import { fetchFIBContent, testData } from '../util/fetchFIBContent';
 
-const FillInTheBlank = () => {
+export const FillInTheBlank = () => {
     // State to store the keywords
     const [content, setContent] = useState({ text: '', keywords: [] });
     const [answers, setAnswers] = useState({});
@@ -109,5 +109,3 @@ const FillInTheBlank = () => {
         </DndContext>
     );
 };
-
-export default FillInTheBlank;

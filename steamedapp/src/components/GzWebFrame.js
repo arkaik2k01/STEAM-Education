@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const GzWebFrame = () => {
+export const GzWebFrame = () => {
     const [gzWebURL, setGzWebURL] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
