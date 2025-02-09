@@ -3,38 +3,25 @@ import { DndContext, closestCenter } from '@dnd-kit/core';
 import { DraggableKeyword } from './DraggableKeyword';
 import { DroppableText } from './DroppableText';
 import { SubmitButton } from './SubmitButton';
-import { fetchFIBContent, testData } from '../../util/fetchFIBContent';
 
-export const FillInTheBlank = () => {
+
+export const FillInTheBlank = ({ content, onComplete }) => {
     // State to store the keywords
-    const [content, setContent] = useState({ text: '', keywords: [] });
     const [answers, setAnswers] = useState({});
-
-    //Util/Debug state
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [locked, setLocked] = useState(false);
 
     //On mount, fetch content. Finally, set our loading to done
     useEffect(() => {
-        // **** DEBUG ****
-        setContent(testData);
-        setLoading(false);
-
-        // const loadContent = async () => {
-        //     try {
-        //         const data = await fetchFIBContent(''); // Add endpoint
-        //         setContent(data);
-        //     }
-        //     catch (error) {
-        //         setError(error);
-        //     }
-        //     finally {
-        //         setLoading(false);
-        //     }
-        // }
-        // loadContent();
-    }, []);
+        if (Object.keys(answers).length === content.answer_key.length) {
+            const isCorrect = content.answer_key.every((answer, index) =>
+                answers[`blank-${index}`] === answer
+            );
+            if (isCorrect) {
+                setLocked(true);
+                onComplete?.();
+            }
+        }
+    }, [answers, content.answer_key, onComplete]);
 
     //Handle drag event end
     const handleDragEnd = (event) => {
@@ -52,10 +39,6 @@ export const FillInTheBlank = () => {
         }
     }
 
-    //Set loading messages
-    if (loading) return <div>Loading...</div>;
-    if (error) return <div>Error: {error.message}</div>;
-
     //Format text to plug into component (separate blanks from text)
     const textSegments = content.text.split('____');
 
@@ -66,13 +49,13 @@ export const FillInTheBlank = () => {
     return (
         <DndContext closestCenter={closestCenter} onDragEnd={handleDragEnd}>
             {/* Create table to hold contents */}
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-6 p-6 min-h-[400px]'>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
                 {/* Text, left side */}
-                <div className='bg-gray-50 rounded-lg p-6 shadow-sm'>
-                    <h3 className="text-lg font-semibold mb-4 border-b pb-2">
+                <div className='bg-opacity-20 bg-white rounded-lg p-6'>
+                    <h3 className="text-lg font-semibold mb-4 border-b border-gray-700 pb-2 text-white">
                         Fill in the Blanks
                     </h3>
-                    <div className="text-lg leading-relaxed">
+                    <div className="text-lg leading-relaxed text-white">
                         {textSegments.map((segment, index) => (
                             <React.Fragment key={`segment-${index}`}>
                                 {segment}
@@ -87,15 +70,11 @@ export const FillInTheBlank = () => {
                     </div>
                 </div>
 
-                <SubmitButton
-                    answers={answers}
-                    content={content}
-                    setLocked={setLocked}
-                />
+
 
                 {/* Keywords, right side */}
-                <div className='bg-gray-50 rounded-lg p-6 shadow-sm'>
-                    <h3 className='text-lg font-semibold mb-4 border-b pb-2'>
+                <div className='bg-opacity-20 bg-white rounded-lg p-6'>
+                    <h3 className='text-lg font-semibold mb-4 border-b border-gray-700 pb-2 text-white'>
                         Answers
                     </h3>
                     <div className='flex gap-4 flex-wrap'>
@@ -104,6 +83,14 @@ export const FillInTheBlank = () => {
                             <DraggableKeyword keyword={keyword} id={`keyword-${index}`} key={index} />
                         ))}
                     </div>
+                </div>
+
+                <div className='col-span-full'>
+                    <SubmitButton
+                        answers={answers}
+                        content={content}
+                        setLocked={setLocked}
+                    />
                 </div>
             </div>
         </DndContext>

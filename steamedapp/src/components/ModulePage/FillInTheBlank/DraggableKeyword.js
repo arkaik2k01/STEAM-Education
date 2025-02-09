@@ -17,9 +17,10 @@ export const DraggableKeyword = ({ keyword, id }) => {
             ref={setNodeRef}
             {...listeners}
             {...attributes}
-            className='px-3 py-2 bg-white border border-blue-200 rounded-md 
-                 cursor-move select-none shadow-sm hover:shadow-md 
-                 transition-shadow duration-200'
+            className='px-3 py-2 bg-blue-900 bg-opacity-20 text-blue-200 border 
+                      border-blue-500 rounded-md cursor-move select-none 
+                      shadow-sm hover:bg-opacity-30 transition-all duration-200
+                      active:scale-95'
             style={style}
         >
             {keyword}

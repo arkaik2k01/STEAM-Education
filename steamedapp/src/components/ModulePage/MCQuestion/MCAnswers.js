@@ -13,12 +13,12 @@ export const MCAnswers = ({ answers, feedback, setFeedback }) => {
 
   const getButtonStyles = (index) => {
     if (!feedback[index]) {
-      return 'bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-800';
+      return 'bg-opacity-20 bg-white hover:bg-opacity-30 border-gray-600 text-white';
     }
 
     return feedback[index].isCorrect
-      ? 'bg-green-50 border-green-500 text-green-700'
-      : 'bg-red-50 border-red-500 text-red-700';
+    ? 'bg-green-900 bg-opacity-20 border-green-500 text-green-200'
+    : 'bg-red-900 bg-opacity-20 border-red-500 text-red-200';
   };
 
   return (
@@ -38,8 +38,8 @@ export const MCAnswers = ({ answers, feedback, setFeedback }) => {
           </button>
           {feedback[index] && (
             <span className={`font-medium ${feedback[index].isCorrect
-                ? 'text-green-600'
-                : 'text-red-600'
+                ? 'text-green-400'
+                : 'text-red-400'
               }`}>
               {feedback[index].isCorrect ? '✓' : '✗'}
             </span>

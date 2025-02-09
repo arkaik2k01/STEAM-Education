@@ -10,8 +10,9 @@ export const DroppableText = ({ value, id }) => {
         <span
             ref={setNodeRef}
             className={`inline-block min-w-[100px] px-4 py-1 mx-1 border-2 rounded-md
-                  ${isOver ? 'border-green-500 bg-green-50' : 'border-gray-300'}
-                  ${value ? 'bg-blue-50 border-blue-300' : ''}`}
+                ${isOver ? 'border-blue-500 bg-blue-900 bg-opacity-20' : 'border-gray-600'}
+                ${value ? 'bg-opacity-30 bg-white border-gray-400' : ''}
+                text-white`}
         >
             {value || '____'}
         </span>

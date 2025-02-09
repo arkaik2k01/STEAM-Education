@@ -2,76 +2,74 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Editor } from '@monaco-editor/react';
 
 export const MonPyEditor = ({
-    loadEndpoint,
-    submitEndpoint,
-    submitSuccess,
-    submitError
+    initialContent,
+    onComplete,
+    submitEndpoint
 }) => {
     const [editorContent, setEditorContent] = useState('# Loading module . . .');
 
     //Util states
-    const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
+    const [result, setResult] = useState(null);
     const editorRef = useRef(null);
 
-    //Fetch module information form the backend when the editor mounts
-    const fetchCodeContent = async (url) => {
-        //Check if load endpoint is provided
-        if (!loadEndpoint) {
-            console.error('No load endpoint provided.');
-            setEditorContent(`def main():
-    # Your code goes here
-    print("Hello, World!")
-    
-    # Example function call
-    result = calculate_sum([1, 2, 3, 4, 5])
-    print(f"Sum of numbers: {result}")`);
-            setLoading(false);
-            return;
-        }
-
-        //Fetch module content
-        setLoading(true);
-        try {
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error('Failed to connect.');
-            }
-            const data = await response.json();
-            setEditorContent(data.module || '# A connection was established, but invalid or NULL data was received from server.'); // Switch this part depending on end point return formatting
-        } catch (error) {
-            console.error('There was a error fetching module content:', error);
-            setEditorContent(`# Fetching module info failed. 
-                An error occurred when communicating with the server, 
-                or incorrect data was received.\n${error}`); // In case of error, editor will display error message
-        }
-    }
-
-    //On mount
     useEffect(() => {
-        //Fetch module and load from back end
-        fetchCodeContent();
-    }, [loadEndpoint]);
+        if (initialContent) {
+            setEditorContent(initialContent);
+        }
+    }, [initialContent]);
 
-    //
     const handleEditorMount = (editor) => {
         editorRef.current = editor;
     }
 
-    const handleSubmit = () => {
-        return; //Submit code
+    const handleSubmit = async () => {
+        if (!submitEndpoint) {
+            setError(new Error('No submit endpoint provided'));
+            return;
+        }
+
+        setSubmitting(true);
+        setError(null);
+
+        try {
+            const response = await fetch(submitEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    code: editorRef.current.getValue()
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Submission failed: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            setResult(data);
+
+            if (data.success) {
+                onComplete?.();
+            }
+        } catch (err) {
+            setError(err);
+            console.error('Error submitting code:', err);
+        } finally {
+            setSubmitting(false);
+        }
     }
 
     return (
-        <div className="w-full h-screen min-h-[500px] flex flex-col">
-            <div className="flex-grow relative">
+        <div className='flex flex-col h-[500px] bg-opacity-20 bg-gray-800 rounded-lg overflow-hidden'>
+            <div className='flex-grow'>
                 <Editor
                     height="100%"
                     defaultLanguage="python"
                     defaultValue={editorContent}
                     theme="vs-dark"
-                    loading={<div className="p-4 text-gray-600">Loading editor...</div>}
                     options={{
                         minimap: { enabled: false },
                         lineNumbers: 'on',
@@ -95,19 +93,29 @@ export const MonPyEditor = ({
                 />
             </div>
     
-            <div className="flex items-center justify-between p-4 bg-gray-100">
-                <div className="flex items-center">
+            <div className="flex items-center justify-between p-4 bg-opacity-30 bg-gray-900">
+            <div className="flex items-center">
                     {submitting && (
-                        <span className="text-gray-600 mr-4">
+                        <span className="text-gray-300 mr-4">
                             Submitting code...
+                        </span>
+                    )}
+                    {error && (
+                        <span className="text-red-400">
+                            {error.message}
+                        </span>
+                    )}
+                    {result && !error && (
+                        <span className="text-green-400">
+                            Code submitted successfully!
                         </span>
                     )}
                 </div>
                 <button
                     onClick={handleSubmit}
-                    disabled={loading || submitting}
+                    disabled={!submitEndpoint || submitting}
                     className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 
-                                 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                 disabled:bg-gray-600 disabled:cursor-not-allowed"
                 >
                     {submitting ? 'Submitting...' : 'Submit Code'}
                 </button>
