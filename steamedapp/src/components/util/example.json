@@ -1,38 +1,68 @@
 {
-    "moduleId": "unique_module_id",
-    "title": "Module Title",
+    "moduleId": "module_1",
+    "title": "Module 1: Basic Python",
     "sections": [
         {
             "type": "text",
-            "content": "Your educational text content here...",
+            "content": "Welcome to Florida Space Institute’s educational tool! The first module will be a very basic introduction to Python concepts that will be used in robotics, which will be explored in later modules.\nLet’s take a pre-assessment to understand any pre-existing knowledge on Python and programming languages in general."
         },
         {
             "type": "multiple-choice",
-        "id": "mcq-1",
-        "is-done": true,
-        "content": {
-                "question": "Question text here",
+            "id": "mcq-1",
+            "is-done": false,
+            "content": {
+                "question": "Which of these is NOT a programming language? ",
                 "answers": [
                     {
-                        "text": "Answer 1",
+                        "text": "Java",
                         "isCorrect": false
                     },
                     {
-                        "text": "Answer 2",
+                        "text": "C",
+                        "isCorrect": false
+                    },
+                    {
+                        "text": "Python",
+                        "isCorrect": false
+                    },
+                    {
+                        "text": "Violet",
                         "isCorrect": true
                     }
                 ]
             }
         },
         {
+            "type": "multiple-choice",
+            "id": "mcq-2",
+            "is-done": false,
+            "content": {
+                "question": "Can you reassign variable types in Python? For example, to convert a string type to an integer type.",
+                "answers": [
+                    {
+                        "text": "Yes",
+                        "isCorrect": true
+                    },
+                    {
+                        "text": "No",
+                        "isCorrect": false
+                    }
+                ]
+            }
+        },
+        {
             "type": "text",
-            "content": "Your educational text content here...",
+            "content": "Data types express the type of variable. For example, integers are whole numbers and floats are numbers with decimals.\n In some programming languages, data types are explicitly defined. This means the program needs to know the type of variable before compiling the code. This is done using data type keywords:\nint x = 4\nstring name = “David” "
+        },
+        {
+            "type": "text",
+            "content": "However, Python supports implicit type declaration. There is no need to use specific keywords to define a variable. When Python reads a variable, it will interpret its type automatically based on the variable’s value. x = 10 "
         },
         {
             "type": "fill-blank",
-        "id": "fib-1",
-        "is-done": false,
-        "content": {
+            "id": "fib-1",
+            "is-done": false,
+            "content": {
                 "text": "This is a ____ in the ____ exercise",
                 "keywords": [
                     "fill",
@@ -48,13 +78,13 @@
         },
         {
             "type": "text",
-            "content": "Your educational text content here...",
+            "content": "Your educational text content here..."
         },
         {
             "type": "code",
-        "id": "code-1",
-        "is-done": false,
-        "content": {
+            "id": "code-1",
+            "is-done": false,
+            "content": {
                 "code": "console.log('Hello, World!');"
             }
         }
