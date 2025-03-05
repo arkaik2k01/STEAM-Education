@@ -36,7 +36,6 @@ export const fetchModuleById = async (moduleId) => {
     return {
       id: moduleSnap.id,
       title: moduleData.title,
-      simulationEndpoint: moduleData.simulationEndpoint,
       sections
     };
   } catch (error) {
