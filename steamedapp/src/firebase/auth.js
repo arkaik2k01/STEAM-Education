@@ -8,11 +8,18 @@ import {
   signOut,
   updateProfile,
   GoogleAuthProvider,
-  onAuthStateChanged
+  onAuthStateChanged,
+  getAuth
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import firebase from 'firebase/app';
+import 'firebase/auth';
+
+// Initialize Firebase Auth
+const authInstance = getAuth();
 
 export const authService = {
+  // Sign up a new user with email and password
   signupWithEmail: async (displayName, email, password) => {
     try {
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
@@ -24,6 +31,7 @@ export const authService = {
     }
   },
 
+  // Update user profile information
   updateUserProfile: async (displayName, email, password, photoURL) => {
     try {
       await updateProfile(auth.currentUser, {
@@ -38,6 +46,7 @@ export const authService = {
     }
   },
 
+  // Sign in using Google OAuth
   googleSignIn: async () => {
     const provider = new GoogleAuthProvider();
     try {
@@ -55,6 +64,7 @@ export const authService = {
     }
   },
 
+  // Log in with email and password
   loginWithEmail: async (email, password) => {
     try {
       const { user } = await signInWithEmailAndPassword(auth, email, password);
@@ -66,6 +76,7 @@ export const authService = {
     }
   },
 
+  // Send a password reset email
   resetPassword: async (email) => {
     try {
       await sendPasswordResetEmail(auth, email);
@@ -76,6 +87,7 @@ export const authService = {
     }
   },
 
+  // Send an email verification
   verifyEmail: async (user) => {
     try {
       await sendEmailVerification(user);
@@ -86,6 +98,7 @@ export const authService = {
     }
   },
 
+  // Log out the current user
   logout: async () => {
     try {
       await signOut(auth);
@@ -94,6 +107,11 @@ export const authService = {
       console.error('Signout error:', err);
       throw err;
     }
+  },
+
+  // Auth state observer
+  onAuthStateChange: (callback) => {
+    return onAuthStateChanged(auth, callback);
   }
 };
 
@@ -103,18 +121,21 @@ export const createTeacherAccount = async (email, password, teacherData) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
+    // Update user profile with display name
+    await updateProfile(user, { displayName: teacherData.name });
+
+    // Store user data in Firestore
     await setDoc(doc(db, 'users', user.uid), {
       ...teacherData,
       email,
       role: 'teacher',
       createdAt: new Date(),
-      classes: [],
-      students: []
+      classes: []
     });
 
     return user;
   } catch (error) {
-    console.error(error);
+    console.error('Error creating teacher account:', error);
     throw error;
   }
 };
@@ -124,6 +145,10 @@ export const createStudentAccount = async (email, password, studentData) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
+    // Update user profile with display name
+    await updateProfile(user, { displayName: studentData.name });
+
+    // Store user data in Firestore
     await setDoc(doc(db, 'users', user.uid), {
       ...studentData,
       email,
@@ -138,7 +163,7 @@ export const createStudentAccount = async (email, password, studentData) => {
 
     return user;
   } catch (error) {
-    console.error(error);
+    console.error('Error creating student account:', error);
     throw error;
   }
 };
@@ -193,7 +218,20 @@ export const updateUserProfile = async (userId, userData) => {
   }
 };
 
-// Auth state observer
-export const onAuthStateChange = (callback) => {
-  return onAuthStateChanged(auth, callback);
-}; 
+export const registerWithEmail = async (email, password) => {
+  try {
+    // Create a new user with email and password
+    const userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
+    return userCredential;
+  } catch (error) {
+    // Handle errors here
+    console.error("Error during registration:", error);
+    throw error;
+  }
+};
+
+// Function to sign in
+export const signIn = (email, password) => {
+  return auth.signInWithEmailAndPassword(email, password);
+};
+

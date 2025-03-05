@@ -2,6 +2,7 @@
   "name": "steamedapp",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
     "@testing-library/jest-dom": "^5.17.0",
@@ -19,7 +20,11 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "emulators": "firebase emulators:start --import test-data"
+    "emulators": "firebase emulators:start --import test-data",
+    "test:firestore": "firebase emulators:exec --only firestore 'jest src/firebase/firestore.test.js'",
+    "test-db": "node src/firebase/testDb.js",
+    "import-content": "node src/scripts/importContent.js",
+    "verify-content": "node src/scripts/verifyContent.js"
   },
   "eslintConfig": {
     "extends": [

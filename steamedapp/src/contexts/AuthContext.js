@@ -1,9 +1,7 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { auth, db } from '../firebase/config';
-import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import React, { useContext, useState, useEffect } from 'react';
+import { authService } from '../firebase/auth';
 
-const AuthContext = createContext();
+const AuthContext = React.createContext();
 
 export function useAuth() {
   return useContext(AuthContext);
@@ -12,21 +10,13 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = authService.onAuthStateChange(user => {
+      setCurrentUser(user);
       if (user) {
-        // Get user data including role from Firestore
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        const userData = userDoc.data();
-        setCurrentUser({ ...user, ...userData });
-        setUserRole(userData?.role);
-      } else {
-        setCurrentUser(null);
-        setUserRole(null);
+        authService.getUserRole(user.uid).then(role => setUserRole(role));
       }
-      setLoading(false);
     });
 
     return unsubscribe;
@@ -35,14 +25,7 @@ export function AuthProvider({ children }) {
   const value = {
     currentUser,
     userRole,
-    isTeacher: userRole === 'teacher',
-    isStudent: userRole === 'student',
-    loading
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 } 

@@ -9,9 +9,9 @@ import Home from './components/Home';
 import Navigation from './components/Navigation/Navigation';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
-import { CreateClass } from './components/dashboard/CreateClass';
-import { JoinClass } from './components/dashboard/JoinClass';
-import { Profile } from './components/Profile';
+import CreateClass from './components/dashboard/CreateClass';
+import JoinClass from './components/dashboard/JoinClass';
+import Profile from './components/Profile';
 
 function App() {
   return (

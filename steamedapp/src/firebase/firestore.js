@@ -1,25 +1,15 @@
+import { collection, addDoc, deleteDoc, setDoc, updateDoc, getDocs, doc, query, where, writeBatch, getDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from './config';
-import { 
-  addDoc, 
-  deleteDoc, 
-  setDoc, 
-  updateDoc, 
-  getDocs,
-  doc, 
-  collection, 
-  query, 
-  where,
-  writeBatch,
-  getDoc,
-  arrayUnion,
-  arrayRemove
-} from 'firebase/firestore';
+import { progressService } from '../services/progressService';
 
+// Firestore service for managing class and student data
 export const firestoreService = {
+  // Generate a random 6-digit class code
   createClassCode: () => {
     return Math.floor(Math.random() * 1000000);
   },
 
+  // Add a new class to Firestore
   addClass: async (name, studentlist) => {
     try {
       const code = firestoreService.createClassCode();
@@ -36,6 +26,7 @@ export const firestoreService = {
     }
   },
 
+  // Delete a class from Firestore
   deleteClass: async (id) => {
     try {
       await deleteDoc(doc(db, 'class', id));
@@ -45,6 +36,7 @@ export const firestoreService = {
     }
   },
 
+  // Add a student to a class
   addStudent: async (name, students, id) => {
     try {
       students.push(name);
@@ -55,6 +47,7 @@ export const firestoreService = {
     }
   },
 
+  // Remove a student from a class
   deleteStudent: async (name, students, id) => {
     const updatedStudents = students.filter(student => student !== name);
     try {
@@ -65,6 +58,7 @@ export const firestoreService = {
     }
   },
 
+  // Create a new student progress document
   createStudentProgress: async (classid, studentName, moduleNum, lessonNum) => {
     const progressCollect = collection(doc(db, 'class', classid), 'studentProgress');
     try {
@@ -81,6 +75,7 @@ export const firestoreService = {
     }
   },
 
+  // Delete a student's progress document
   deleteStudentProgress: async (classid, name) => {
     const progressCollect = collection(doc(db, 'class', classid), 'studentProgress');
     try {
@@ -93,6 +88,7 @@ export const firestoreService = {
     }
   },
 
+  // Update a student's progress percentage
   updateStudentProgress: async (classid, name) => {
     const progressCollect = collection(doc(db, 'class', classid), 'studentProgress');
     try {
@@ -110,6 +106,7 @@ export const firestoreService = {
     }
   },
 
+  // Update the current module and lesson for a student
   updateCurrentModuleAndLesson: async (classid, name) => {
     const progressCollect = collection(doc(db, 'class', classid), 'studentProgress');
     try {
@@ -128,7 +125,9 @@ export const firestoreService = {
   }
 };
 
+// Batch operations for Firestore
 export const batchOperations = {
+  // Update multiple students' data in a batch
   updateMultipleStudents: async (classId, updates) => {
     const batch = writeBatch(db);
     
@@ -141,6 +140,7 @@ export const batchOperations = {
   }
 };
 
+// Class management service for handling class-related operations
 export const classManagementService = {
   // Generate a unique 6-digit class code
   generateClassCode: async () => {

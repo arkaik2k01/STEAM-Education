@@ -1,29 +1,42 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getFunctions } from 'firebase/functions';
-import { connectAuthEmulator, connectFirestoreEmulator, connectFunctionsEmulator } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, connectAuthEmulator } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 
+// Firebase configuration object containing keys and identifiers for your app
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID,
-  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
+  apiKey: "AIzaSyD4JfnpMGf6YWFz3CltBhhYzyI4fRDTbuM",
+  authDomain: "steameducation-b1b03.firebaseapp.com",
+  projectId: "steameducation-b1b03",
+  storageBucket: "steameducation-b1b03.firebasestorage.app",
+  messagingSenderId: "104577670307",
+  appId: "1:104577670307:web:5b82417067bb5b9ae63316",
+  measurementId: "G-200FHB1HCH"
 };
 
-export const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const func = getFunctions(app);
-export const googleProv = new GoogleAuthProvider();
+// Initialize Firebase app with the configuration
+const app = initializeApp(firebaseConfig);
 
-// Emulator setup
+// Initialize Firebase services
+const auth = getAuth(app); // Authentication service
+const db = getFirestore(app); // Firestore database service
+const func = getFunctions(app); // Cloud Functions service
+const googleProv = new GoogleAuthProvider(); // Google Auth provider for OAuth
+
+// Emulator setup for development environment
 if (process.env.NODE_ENV === 'development') {
   console.log("Using Emulators...");
-  connectAuthEmulator(auth, "http://localhost:9099");
-  connectFirestoreEmulator(db, "localhost", 8080);
-  connectFunctionsEmulator(func, "localhost", 5001);
-} 
+  connectAuthEmulator(auth, "http://localhost:9099"); // Connect to Auth emulator
+  connectFirestoreEmulator(db, "localhost", 8080); // Connect to Firestore emulator
+  connectFunctionsEmulator(func, "localhost", 5001); // Connect to Functions emulator
+}
+
+export {
+  app,
+  auth,
+  db,
+  func,
+  googleProv,
+  firebaseConfig
+}; 
