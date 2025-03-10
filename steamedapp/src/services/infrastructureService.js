@@ -1,10 +1,12 @@
 // Firebase function endpoint 
 const FIREBASE_ENDPOINT = 'FIREBASE_ENDPOINT_HERE';
 
-/* This POST request will send a message to Firebase in order to create the simulation
+/* 
+* This POST request will send a message to Firebase in order to create the simulation
 * and compiler in the back end. This will return the endpoints for the simulation and compiler unique
 * to the user ID.
 */
+
 export const requestModuleSimulation = async (moduleId, userId) => {
   try {
     const response = await fetch(FIREBASE_ENDPOINT, {
