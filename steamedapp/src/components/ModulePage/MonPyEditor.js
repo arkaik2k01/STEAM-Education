@@ -4,12 +4,13 @@ import { Editor } from '@monaco-editor/react';
 export const MonPyEditor = ({
     initialContent,
     onComplete,
-    submitEndpoint
+    codeEndpoint
 }) => {
     const [editorContent, setEditorContent] = useState('# Loading module . . .');
 
     //Util states
     const [submitting, setSubmitting] = useState(false);
+    const [resetting, setResetting] = useState(false);
     const [error, setError] = useState(null);
     const [result, setResult] = useState(null);
     const editorRef = useRef(null);
@@ -25,7 +26,7 @@ export const MonPyEditor = ({
     }
 
     const handleSubmit = async () => {
-        if (!submitEndpoint) {
+        if (!codeEndpoint) {
             setError(new Error('No submit endpoint provided'));
             return;
         }
@@ -33,8 +34,10 @@ export const MonPyEditor = ({
         setSubmitting(true);
         setError(null);
 
+
+        // REWORK THIS
         try {
-            const response = await fetch(submitEndpoint, {
+            const response = await fetch(codeEndpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -61,6 +64,19 @@ export const MonPyEditor = ({
             setSubmitting(false);
         }
     }
+
+    const handleReset = () => {
+        setResetting(true);
+        setError(null);
+        setResult(null);
+
+        if (initialContent && editorRef.current) {
+            editorRef.current.setValue(initialContent);
+        }
+
+        setResetting(false);
+    }
+
 
     return (
         <div className='flex flex-col h-[500px] bg-opacity-20 bg-gray-800 rounded-lg overflow-hidden'>
@@ -92,9 +108,9 @@ export const MonPyEditor = ({
                     onMount={handleEditorMount}
                 />
             </div>
-    
+
             <div className="flex items-center justify-between p-4 bg-opacity-30 bg-gray-900">
-            <div className="flex items-center">
+                <div className="flex items-center">
                     {submitting && (
                         <span className="text-gray-300 mr-4">
                             Submitting code...
@@ -112,8 +128,16 @@ export const MonPyEditor = ({
                     )}
                 </div>
                 <button
+                    onClick={handleReset}
+                    disabled={!initialContent || resetting}
+                    className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 
+                    disabled:bg-gray-600 disabled:cursor-not-allowed"
+                >
+                    {resetting ? 'Resetting...' : 'Reset Code'}
+                </button>
+                <button
                     onClick={handleSubmit}
-                    disabled={!submitEndpoint || submitting}
+                    disabled={!codeEndpoint || submitting}
                     className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 
                                  disabled:bg-gray-600 disabled:cursor-not-allowed"
                 >
@@ -122,6 +146,6 @@ export const MonPyEditor = ({
             </div>
         </div>
     );
-    
+
 }
 
