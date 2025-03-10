@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import StudentDashboard from '../components/studentDashboard';
 import { modulesData } from '../components/util/modulesData';
+import { fetchAllModules } from '../firebase/services/moduleServer';
 
 const StudentDashboardPage = () => {
   const [modules, setModules] = useState([]);
@@ -9,10 +10,19 @@ const StudentDashboardPage = () => {
 
   useEffect(() => {
     //Load modules from database here
+    const loadModules = async () => {
+      try {
+        const fetchedModules = await fetchAllModules(); // Await the Promise
+        setModules(fetchedModules);
+        setLoading(false);
+      } catch (err) {
+        console.error('Failed to fetch modules:', err);
+        setError('Failed to load modules. Please try again later.');
+        setLoading(false);
+      }
+    };
 
-    // ************ Replace this with firestore implementation ************
-
-    setModules(modulesData);
+    loadModules();
   }, []);
 
   if (loading) {
