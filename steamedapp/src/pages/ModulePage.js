@@ -28,8 +28,7 @@ const ModulePage = ({ moduleData }) => {
         return (
           <div className="bg-opacity-10 bg-white rounded-lg p-6 mb-6">
             <MCQuestion 
-              question={section.content.question}
-              answers={section.content.answers}
+              questionData={section.content}
               onComplete={() => handleSectionComplete(section.id)}
             />
           </div>

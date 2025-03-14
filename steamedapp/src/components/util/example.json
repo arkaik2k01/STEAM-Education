@@ -11,25 +11,14 @@
             "id": "mcq-1",
             "is-done": false,
             "content": {
-                "question": "Which of these is NOT a programming language? ",
-                "answers": [
-                    {
-                        "text": "Java",
-                        "isCorrect": false
-                    },
-                    {
-                        "text": "C",
-                        "isCorrect": false
-                    },
-                    {
-                        "text": "Python",
-                        "isCorrect": false
-                    },
-                    {
-                        "text": "Violet",
-                        "isCorrect": true
-                    }
-                ]
+                "question": "Which of these is NOT a programming language?",
+                "options": [
+                    "Java",
+                    "C",
+                    "Python",
+                    "Violet"
+                ],
+                "correctAnswer": "Violet"
             }
         },
         {
@@ -38,16 +27,11 @@
             "is-done": false,
             "content": {
                 "question": "Can you reassign variable types in Python? For example, to convert a string type to an integer type.",
-                "answers": [
-                    {
-                        "text": "Yes",
-                        "isCorrect": true
-                    },
-                    {
-                        "text": "No",
-                        "isCorrect": false
-                    }
-                ]
+                "options": [
+                    "Yes",
+                    "No"
+                ],
+                "correctAnswer": "Yes"
             }
         },
         {
