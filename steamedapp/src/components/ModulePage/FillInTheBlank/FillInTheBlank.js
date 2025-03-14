@@ -9,38 +9,111 @@ export const FillInTheBlank = ({ content, onComplete }) => {
     // State to store the keywords
     const [answers, setAnswers] = useState({});
     const [locked, setLocked] = useState(false);
+    // State to store the parsed text segments and blank positions
+    const [textSegments, setTextSegments] = useState([]);
+    const [keywords, setKeywords] = useState([]);
 
     //On mount, fetch content. Finally, set our loading to done
     useEffect(() => {
-        if (Object.keys(answers).length === content.answer_key.length) {
-            const isCorrect = content.answer_key.every((answer, index) =>
-                answers[`blank-${index}`] === answer
-            );
+        if (!content) return;
+
+        // Parse the text to identify blanks using consecutive "_" characters 
+        const segments = [];
+
+        // Use regex to split the text by consecutive underscores
+        const regex = /_{1,}/g; // Match 1 or more consecutive underscores
+        let lastIndex = 0;
+        let blankIndex = 0;
+        let match;
+
+        // Find all matches of consecutive underscores
+        while ((match = regex.exec(content.text)) !== null) {
+            // Add the text segment before this blank
+            if (match.index > lastIndex) {
+                segments.push({
+                    type: 'text',
+                    content: content.text.substring(lastIndex, match.index)
+                });
+            }
+
+            // Add the blank
+            segments.push({
+                type: 'blank',
+                id: `blank-${blankIndex}`
+            });
+            blankIndex++;
+
+            // Update lastIndex to continue after this blank
+            lastIndex = match.index + match[0].length;
+        }
+
+        // Add any remaining text after the last blank
+        if (lastIndex < content.text.length) {
+            segments.push({
+                type: 'text',
+                content: content.text.substring(lastIndex)
+            });
+        }
+
+        // Set the parsed text segments and blank positions
+        setTextSegments(segments);
+
+        // Shuffle the answers and set the keywords
+        if (content.answers) {
+            setKeywords(shuffleArray([...content.answers]));
+        }
+    }, [content]);
+
+    // Check if all blanks are filled correctly
+    useEffect(() => {
+        if (!content || !content.items || Object.keys(answers).length === 0) return;
+
+        const blankSegments = textSegments.filter(segment => segment.type === 'blank').length;
+        const blankCount = blankSegments.length;
+
+        // If all blanks are filled
+        if (Object.keys(answers).length === blankCount) {
+            // Check if each answer matches the corresponding item's category
+            const isCorrect = blankSegments.every(segment => {
+                // Get index number from blank-0, blank-1, etc.
+                const blankIndex = parseInt(segment.id.split('-')[1]);
+                // Get the expected answer from the items array
+                const expectedAnswer = content.answers[blankIndex];
+                return answers[segment.id] === expectedAnswer;
+            });
+
             if (isCorrect) {
                 setLocked(true);
                 onComplete?.();
             }
         }
-    }, [answers, content.answer_key, onComplete]);
+    }, [answers, textSegments, content, onComplete]);
 
-    //Handle drag event end
+    // Handle drag event end
     const handleDragEnd = (event) => {
         const { active, over } = event;
 
-        if (locked) return; //The answer is done, disable dragging
+        if (locked) return; // The exercise is completed, disable dragging
 
-        //If the dragging is done AND it is over valid droppable area
+        // If dragging is done AND it's over a valid droppable area
         if (over && active.data.current) {
-            //Take previous answers and add/replace with new one
+            // Take previous answers and add/replace with new one
             setAnswers(prev => ({
                 ...prev,
                 [over.id]: active.data.current.keyword,
             }));
         }
-    }
+    };
 
-    //Format text to plug into component (separate blanks from text)
-    const textSegments = content.text.split('____');
+    // Helper function to shuffle an array
+    const shuffleArray = (array) => {
+        const newArray = [...array];
+        for (let i = newArray.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+        }
+        return newArray;
+    };
 
     /* Create the component. DnDContext will recursively add DnD-kit functionality to all components
     * within it. DroppableText represents the drop zones for our DraggableKeywords. We map through all
@@ -56,17 +129,23 @@ export const FillInTheBlank = ({ content, onComplete }) => {
                         Fill in the Blanks
                     </h3>
                     <div className="text-lg leading-relaxed text-white">
-                        {textSegments.map((segment, index) => (
-                            <React.Fragment key={`segment-${index}`}>
-                                {segment}
-                                {index < textSegments.length - 1 && (
+                    {textSegments.map((segment, index) => {
+                            if (segment.type === 'text') {
+                                return (
+                                    <span key={`segment-${index}`}>
+                                        {segment.content}
+                                    </span>
+                                );
+                            } else {
+                                return (
                                     <DroppableText
-                                        id={`blank-${index}`}
-                                        value={answers[`blank-${index}`]}
+                                        key={`segment-${index}`}
+                                        id={segment.id}
+                                        value={answers[segment.id]}
                                     />
-                                )}
-                            </React.Fragment>
-                        ))}
+                                );
+                            }
+                        })}
                     </div>
                 </div>
 
@@ -79,7 +158,7 @@ export const FillInTheBlank = ({ content, onComplete }) => {
                     </h3>
                     <div className='flex gap-4 flex-wrap'>
                         {/* Map through answers and create DroppableKeyword components */}
-                        {content.keywords.map((keyword, index) => (
+                        {keywords.map((keyword, index) => (
                             <DraggableKeyword keyword={keyword} id={`keyword-${index}`} key={index} />
                         ))}
                     </div>
@@ -88,8 +167,10 @@ export const FillInTheBlank = ({ content, onComplete }) => {
                 <div className='col-span-full'>
                     <SubmitButton
                         answers={answers}
+                        textSegments={textSegments}
                         content={content}
                         setLocked={setLocked}
+                        onComplete={onComplete}
                     />
                 </div>
             </div>

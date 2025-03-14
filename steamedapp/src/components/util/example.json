@@ -4,7 +4,7 @@
     "sections": [
         {
             "type": "text",
-            "content": "Welcome to Florida Space Institute’s educational tool! The first module will be a very basic introduction to Python concepts that will be used in robotics, which will be explored in later modules.\nLet’s take a pre-assessment to understand any pre-existing knowledge on Python and programming languages in general."
+            "content": "Welcome to Florida Space Institute's educational tool! The first module will be a very basic introduction to Python concepts that will be used in robotics, which will be explored in later modules.\nLet's take a pre-assessment to understand any pre-existing knowledge on Python and programming languages in general."
         },
         {
             "type": "multiple-choice",
@@ -52,28 +52,19 @@
         },
         {
             "type": "text",
-            "content": "Data types express the type of variable. For example, integers are whole numbers and floats are numbers with decimals.\n In some programming languages, data types are explicitly defined. This means the program needs to know the type of variable before compiling the code. This is done using data type keywords:\nint x = 4\nstring name = “David” "
+            "content": "Data types express the type of variable. For example, integers are whole numbers and floats are numbers with decimals.\n In some programming languages, data types are explicitly defined. This means the program needs to know the type of variable before compiling the code. This is done using data type keywords:\nint x = 4\nstring name = \"David\" "
         },
         {
             "type": "text",
-            "content": "However, Python supports implicit type declaration. There is no need to use specific keywords to define a variable. When Python reads a variable, it will interpret its type automatically based on the variable’s value. x = 10 "
+            "content": "However, Python supports implicit type declaration. There is no need to use specific keywords to define a variable. When Python reads a variable, it will interpret its type automatically based on the variable's value. x = 10 "
         },
         {
             "type": "fill-blank",
             "id": "fib-1",
             "is-done": false,
             "content": {
-                "text": "This is a ____ in the ____ exercise",
-                "keywords": [
-                    "fill",
-                    "blank",
-                    "sample",
-                    "text"
-                ],
-                "answer_key": [
-                    "fill",
-                    "blank"
-                ]
+                "text": "This is a ___ in the ______ exercise",
+                "answers": ["fill", "blank"]
             }
         },
         {

@@ -8,7 +8,7 @@ const moduleData = example;
 const App = () => {
   return (
       <div className="min-h-screen">
-          <StudentDashboardPage/>
+          <ModulePage moduleData={example}/>
       </div>
   );
 };

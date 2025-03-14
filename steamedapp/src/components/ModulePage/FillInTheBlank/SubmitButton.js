@@ -1,15 +1,34 @@
 import React, { useState } from 'react';
 
-export const SubmitButton = ({ answers, content, setLocked}) => {
+export const SubmitButton = ({ answers, textSegments, content, setLocked, onComplete}) => {
     const [isCorrect, setIsCorrect] = useState(null);
 
     const checkAnswers = () => {
-        const areAllCorrect = content.answer_key.every((correctAnswer, index) => 
-            answers[`blank-${index}`] === correctAnswer
-        );
+        // Get all blank segments
+        const blankSegments = textSegments.filter(segment => segment.type === 'blank');
+        
+        // Make sure all blanks are filled
+        const allBlanksFilled = blankSegments.every(segment => answers[segment.id]);
+        
+        if (!allBlanksFilled) {
+            setIsCorrect(false);
+            return;
+        }
+        
+        // Check if each answer matches the corresponding item's category
+        const areAllCorrect = blankSegments.every(segment => {
+            const blankIndex = parseInt(segment.id.split('-')[1]);
+            const expectedAnswer = content.answers[blankIndex];
+            return answers[segment.id] === expectedAnswer;
+        });
 
         setIsCorrect(areAllCorrect);
         setLocked(areAllCorrect);
+        
+        if (areAllCorrect) {
+            // If all answers are correct, call onComplete if provided
+            onComplete();
+        }
     };
 
     return (
