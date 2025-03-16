@@ -1,67 +1,178 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
+import { fetchModuleById } from '../firebase/services/moduleServer';
 import { MCQuestion } from '../components/ModulePage/MCQuestion/MCQuestion';
 import { MonPyEditor } from '../components/ModulePage/MonPyEditor';
 import { FillInTheBlank } from '../components/ModulePage/FillInTheBlank/FillInTheBlank';
 import { GzWebFrame } from '../components/ModulePage/GzWebFrame';
+import { requestModuleSimulation } from '../firebase/services/infrastructureService';
 
-const ModulePage = ({ moduleData }) => {
+const ModulePage = (props) => {
+  const params = useParams();
+  const moduleId = props.moduleId || (params ? params.moduleId : null);
+
+  const [moduleData, setModuleData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [progress, setProgress] = useState({});
+  const [simulationEndpoint, setSimulationEndpoint] = useState(null);
+  const [compilerEndpoint, setCompilerEndpoint] = useState(null);
+
+  // Fetch module data when component mounts
+  useEffect(() => {
+    const loadModule = async () => {
+      try {
+        setLoading(true);
+        console.log(`Fetching module with Firestore ID: ${moduleId}`);
+
+        const module = await fetchModuleById(moduleId);
+        setModuleData(module);
+
+        // Mock user ID - Replace with actual user ID from auth
+        const userId = "test-user";
+
+        // Request simulation infrastructure
+        try {
+          const endpoints = await requestModuleSimulation(moduleId, userId);
+          setSimulationEndpoint(endpoints.simulationEndpoint);
+          setCompilerEndpoint(endpoints.compilerEndpoint);
+        } catch (simError) {
+          console.error('Failed to set up simulation:', simError);
+          // Continue with module load even if simulation setup fails
+        }
+      } catch (err) {
+        console.error('Failed to fetch module:', err);
+        setError('Failed to load module content. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (moduleId) {
+      loadModule();
+    }
+  }, [moduleId]);
 
   // Update progress when a section is completed
-  const handleSectionComplete = (sectionId) => {
+  const handleSectionComplete = useCallback((sectionId) => {
+    console.log(`Section completed: ${sectionId}`);
     setProgress(prev => ({
       ...prev,
       [sectionId]: true
     }));
-  };
+  }, []);
 
-  // Render different section types
-  const renderSection = (section) => {
-    switch (section.type) {
-      case 'text':
+  // Render different exercise types
+  const renderExercise = useCallback((exercise) => {
+    switch (exercise.type) {
+      case 'multipleChoice':
         return (
-          <div className="prose prose-invert max-w-none bg-opacity-10 bg-white rounded-lg p-6 mb-6">
-            <p className="text-white">{section.content}</p>
-          </div>
+          <MCQuestion
+            questionData={exercise.item}
+            onComplete={() => handleSectionComplete(exercise.id)}
+          />
         );
-      case 'multiple-choice':
+      case 'dragAndDrop':
         return (
-          <div className="bg-opacity-10 bg-white rounded-lg p-6 mb-6">
-            <MCQuestion 
-              questionData={section.content}
-              onComplete={() => handleSectionComplete(section.id)}
-            />
-          </div>
+          <FillInTheBlank
+            content={exercise.item}
+            onComplete={() => handleSectionComplete(exercise.id)}
+          />
         );
-      case 'fill-blank':
+      case 'coding':
         return (
-          <div className="bg-opacity-10 bg-white rounded-lg p-6 mb-6">
-            <FillInTheBlank 
-              content={section.content}
-              onComplete={() => handleSectionComplete(section.id)}
-            />
-          </div>
-        );
-      case 'code':
-        return (
-          <div className="bg-opacity-10 bg-white rounded-lg p-6 mb-6">
-            <MonPyEditor
-              initialContent={section.content.code}
-              onComplete={() => handleSectionComplete(section.id)}
-            />
-          </div>
+          <MonPyEditor
+            initialContent={exercise.item?.code}
+            codeEndpoint={compilerEndpoint}
+            onComplete={() => handleSectionComplete(exercise.id)}
+          />
         );
       default:
-        return null;
+        return <p className="text-gray-400">Unsupported exercise type: {exercise.type}</p>;
     }
-  };
+  }, [handleSectionComplete, compilerEndpoint]);
+
+  // Render pre-assessment section
+  const renderPreAssessment = useCallback(() => {
+    if (!moduleData?.preAssessment || !moduleData.preAssessment.questions) {
+      return null;
+    }
+
+    return (
+      <div className="bg-opacity-10 bg-white rounded-lg p-6 mb-6">
+        <h2 className="text-xl font-semibold text-white mb-4">Pre-Assessment</h2>
+        {moduleData.preAssessment.questions.map((question, index) => {          
+          return (
+            <div key={`preassess-${index}`} className="mb-6">
+              <MCQuestion 
+                questionData={question} 
+                onComplete={() => handleSectionComplete(`preassess-${index}`)}
+              />
+            </div>
+          );
+        })}
+      </div>
+    );
+  }, [moduleData, handleSectionComplete]);
 
   // Calculate progress percentage
   const calculateProgress = () => {
-    const totalSections = moduleData.sections.length;
-    const completedSections = Object.values(progress).filter(Boolean).length;
-    return Math.round((completedSections / totalSections) * 100);
+    if (!moduleData || !moduleData.sections) return 0;
+
+    let totalItems = 0;
+    let completedItems = 0;
+
+    // Count pre-assessment questions if they exist
+    if (moduleData.preAssessment && moduleData.preAssessment.questions) {
+      totalItems += moduleData.preAssessment.questions.length;
+      moduleData.preAssessment.questions.forEach((_, index) => {
+        if (progress[`preassess-${index}`]) {
+          completedItems++;
+        }
+      });
+    }
+
+    // Count section exercises
+    moduleData.sections.forEach(section => {
+      if (section.exercises) {
+        totalItems += section.exercises.length;
+        section.exercises.forEach(exercise => {
+          if (progress[exercise.id]) {
+            completedItems++;
+          }
+        });
+      }
+    });
+
+    return totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#201E1E' }}>
+        <div className="text-white text-xl">Loading module content...</div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#201E1E' }}>
+        <div className="text-red-400 text-xl">{error}</div>
+      </div>
+    );
+  }
+
+  // A module with the given ID was not found
+  if (!moduleData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#201E1E' }}>
+        <div className="text-white text-xl">Module not found</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#201E1E' }}>
@@ -86,23 +197,39 @@ const ModulePage = ({ moduleData }) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left side: Scrollable educational content */}
           <div className="max-h-[calc(100vh-8rem)] overflow-y-auto pr-4 space-y-4">
-            {moduleData.sections.map((section, index) => (
-              <div key={`section-${index}`} className="relative">
-                {/* Section completion indicator */}
-                {progress[section.id] && (
-                  <div 
-                    className="absolute -left-4 top-4 w-3 h-3 rounded-full"
-                    style={{ backgroundColor: '#0A3C91' }}
-                  />
+            {/* Pre-assessment section */}
+            {moduleData.preAssessment && renderPreAssessment()}
+            
+            {/* Module sections */}
+            {moduleData.sections.map((section) => (
+              <div key={section.id} className="relative">
+                {/* Section content */}
+                <div className="prose prose-invert max-w-none bg-opacity-10 bg-white rounded-lg p-6 mb-6">
+                  <h2 className="text-xl font-semibold text-white mb-4">{section.title}</h2>
+                  <div className="text-white">{section.content}</div>
+                </div>
+                
+                {/* Section exercises */}
+                {section.exercises && section.exercises.length > 0 && (
+                  <div className="space-y-6">
+                    {section.exercises.map((exercise) => (
+                      <div key={exercise.id} className="bg-opacity-10 bg-white rounded-lg p-6">
+                        <h3 className="text-lg font-semibold text-white mb-2">{exercise.title}</h3>
+                        {exercise.description && (
+                          <p className="text-gray-300 mb-4">{exercise.description}</p>
+                        )}
+                        {renderExercise(exercise)}
+                      </div>
+                    ))}
+                  </div>
                 )}
-                {renderSection(section)}
               </div>
             ))}
           </div>
 
           {/* Right side: Fixed GzWebFrame */}
           <div className="bg-opacity-10 bg-white rounded-lg overflow-hidden sticky top-24 h-[calc(100vh-8rem)]">
-            <GzWebFrame />
+            <GzWebFrame endpoint={simulationEndpoint} />
           </div>
         </div>
       </div>

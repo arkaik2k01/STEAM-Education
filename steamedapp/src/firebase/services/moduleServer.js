@@ -14,21 +14,58 @@ export const fetchModuleById = async (moduleId) => {
 
     const moduleData = moduleSnap.data();
 
+    //Gather Pre-Assesment information
+    const preAssessmentQuery = query(
+      collection(db, 'modules', moduleId, 'preAssessment')
+    );
+    const preAssessmentSnap = await getDocs(preAssessmentQuery);
+    let preAssessment = null;
+
+    if (!preAssessmentSnap.empty) {
+      const preAssessmentDoc = preAssessmentSnap.docs[0]; // Assuming there's just one document
+      preAssessment = {
+        id: preAssessmentDoc.id,
+        ...preAssessmentDoc.data()
+      };
+    }
+
     // Fetch sections for this module
     const sectionsQuery = query(
-      collection(db, 'sections'),
-      where('moduleId', '==', moduleId)
+      collection(db, 'modules', moduleId, 'sections')
     );
 
     const sectionsSnap = await getDocs(sectionsQuery);
     const sections = [];
 
-    sectionsSnap.forEach((doc) => {
-      sections.push({
-        id: doc.id,
-        ...doc.data()
+    // Process each section
+    for(const sectionDoc of sectionsSnap.docs) {
+      const sectionData = {
+        id: sectionDoc.id,
+        ...sectionDoc.data()
+      };
+
+      const exercisesQuery = query(
+        collection(db, 'modules', moduleId, 'sections', sectionDoc.id, 'exercises')
+      );
+
+      const exercisesSnap = await getDocs(exercisesQuery);
+      const exercises = [];
+
+      exercisesSnap.forEach((exerciseDoc) => {
+        exercises.push({
+          id: exerciseDoc.id,
+          ...exerciseDoc.data()
+        });
       });
-    });
+      
+      // Sort exercises if they have an order field
+      exercises.sort((a, b) => (a.order || 0) - (b.order || 0));
+      
+      // Add exercises to section data
+      sectionData.exercises = exercises;
+      
+      sections.push(sectionData);
+    }
 
     // Sort sections by their order field
     sections.sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -36,6 +73,8 @@ export const fetchModuleById = async (moduleId) => {
     return {
       id: moduleSnap.id,
       title: moduleData.title,
+      description: moduleData.description,
+      preAssessment,
       sections
     };
   } catch (error) {

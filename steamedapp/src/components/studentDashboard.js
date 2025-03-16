@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const StudentDashboard = ({ studentModules }) => {
+const StudentDashboard = ({ studentModules, onModuleSelect }) => {
   const [selectedModule, setSelectedModule] = useState(null);
 
   // Helper function to calculate module progress
@@ -14,10 +14,19 @@ const StudentDashboard = ({ studentModules }) => {
     return Math.round((completedSections / totalSections) * 100);
   };
 
-  // Handle module selection
+  // When a module is selected, load the module details
   const handleModuleSelect = (module) => {
     setSelectedModule(module);
   };
+
+  // On click of continue button, navigate to the module page
+  const handleContinue = () => {
+    if (selectedModule && onModuleSelect) {
+      // Use the Firestore document ID directly
+      onModuleSelect(selectedModule.id);
+    }
+  };
+
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#201E1E' }}>
@@ -105,7 +114,8 @@ const StudentDashboard = ({ studentModules }) => {
                       {calculateProgress(selectedModule)}% Complete
                     </span>
                     
-                    <button 
+                    <button
+                      onClick={handleContinue} 
                       className="px-4 py-2 bg-blue-600 text-white rounded-md 
                                 hover:bg-blue-700 transition-colors"
                     >

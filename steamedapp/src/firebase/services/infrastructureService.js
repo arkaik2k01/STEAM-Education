@@ -1,15 +1,18 @@
-// Firebase function endpoint 
-const FIREBASE_ENDPOINT = 'FIREBASE_ENDPOINT_HERE';
+// IaC function endpoint
+// 'https://steam-iac-pulumi-function-104577670307.us-central1.run.app/';
+const IaC_ENDPOINT = 'IAC_ENDPOINT HERE'
 
 /* 
-* This POST request will send a message to Firebase in order to create the simulation
+* This POST request will send a message to IaC in order to create the simulation
 * and compiler in the back end. This will return the endpoints for the simulation and compiler unique
 * to the user ID.
 */
 
 export const requestModuleSimulation = async (moduleId, userId) => {
   try {
-    const response = await fetch(FIREBASE_ENDPOINT, {
+    console.log(`Requesting infrastructure for module: ${moduleId}, user: ${userId}`);
+
+    const response = await fetch(IaC_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
