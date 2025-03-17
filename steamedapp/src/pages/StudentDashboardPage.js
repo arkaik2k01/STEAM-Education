@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import StudentDashboard from '../components/studentDashboard';
 import { useNavigate } from 'react-router-dom';
-import { modulesData } from '../components/util/modulesData';
+import { modulesData } from '../utils/modulesData';
 import { fetchAllModules } from '../firebase/services/moduleServer';
 
 const StudentDashboardPage = () => {

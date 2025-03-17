@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import StudentDashboardPage from './pages/StudentDashboardPage';
 import ModulePage from './pages/ModulePage';
+import TeacherDashboardPage from './pages/TeacherDashboardPage';
 
 function App() {
   return (
@@ -10,7 +11,8 @@ function App() {
         <Route path="/" element={<StudentDashboardPage />} />
         <Route path="/dashboard" element={<StudentDashboardPage />} />
         <Route path="/module/:moduleId" element={<ModulePage />} />
-        {/* Add other routes as needed */}
+        <Route path="/teacher" element={<TeacherDashboardPage useMockData={true} />} />
+        {/* Missing: login, register */}
       </Routes>
     </Router>
   );
