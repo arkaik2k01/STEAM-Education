@@ -1,4 +1,4 @@
-import { db } from '../firebase/config';
+import { db } from '../firebase/config.js';
 import { 
   collection, 
   addDoc, 
@@ -55,20 +55,32 @@ const educationalContent = {
           exercises: [
             {
               type: "dragAndDrop",
-              title: "Practice - drag and drop correct data type",
-              description: "Match the variables with their correct data types",
+              title: "Practice - Variable Value Matching",
+              description: "Match each variable with its appropriate value. Consider how Python would store these values.",
               items: [
-                "personName = _______",
-                "integerNum = _______",
-                "decimalNum = _______",
-                "dogName = _______",
-                "numList = _______",
-                "setList = _______",
-                "trueBool = ______",
-                "falseBool = ______",
-                "myDictionary = ________",
-                "myTuple = ________"
-              ]
+                { id: "var1", text: "personName = _______", category: "'John Smith'" },
+                { id: "var2", text: "integerNum = _______", category: "12" },
+                { id: "var3", text: "decimalNum = _______", category: "3.5" },
+                { id: "var4", text: "dogName = _______", category: "'Spot'" },
+                { id: "var5", text: "numList = _______", category: "[1,2]" },
+                { id: "var6", text: "setList = _______", category: "{1,2}" },
+                { id: "var7", text: "trueBool = ______", category: "True" },
+                { id: "var8", text: "falseBool = ______", category: "False" },
+                { id: "var9", text: "myDictionary = ________", category: "{1: 'one', 2: 'two'}" },
+                { id: "var10", text: "myTuple = ________", category: "(1,2)" }
+              ],
+              correctAnswers: {
+                "'John Smith'": ["var1"],
+                "12": ["var2"],
+                "3.5": ["var3"],
+                "'Spot'": ["var4"],
+                "[1,2]": ["var5"],
+                "{1,2}": ["var6"],
+                "True": ["var7"],
+                "False": ["var8"],
+                "{1: 'one', 2: 'two'}": ["var9"],
+                "(1,2)": ["var10"]
+              }
             }
           ]
         },
@@ -79,17 +91,35 @@ const educationalContent = {
           exercises: [
             {
               type: "dragAndDrop",
-              title: "Practice - drag and drop correct naming",
-              description: "Match the variables with their correct names",
+              title: "Practice - Variable Naming",
+              description: "Match the correct variable names with their values",
               items: [
-                "______ = 3.14",
-                "______ = 'strawberry'",
-                "______ = 9 + 2",
-                "______ = [\"a\", \"b\", \"c\"]",
-                "______ = (x,y)",
-                "______ = {'socks':3, 'shirt':5, 'pants':6}",
-                "______ = True"
-              ]
+                { id: "blank1", text: "______ = 3.14", answer: "pi" },
+                { id: "blank2", text: "______ = 'strawberry'", answer: "fruit" },
+                { id: "blank3", text: "______ = 9 + 2", answer: "add_num" },
+                { id: "blank4", text: "______ = [\"a\", \"b\", \"c\"]", answer: "letterList" },
+                { id: "blank5", text: "______ = (x,y)", answer: "coordinate" },
+                { id: "blank6", text: "______ = {'socks':3, 'shirt':5, 'pants':6}", answer: "stockQuantity" },
+                { id: "blank7", text: "______ = True", answer: "isEmpty" }
+              ],
+              possibleAnswers: [
+                "pi",
+                "fruit",
+                "add_num",
+                "letterList",
+                "coordinate",
+                "stockQuantity",
+                "isEmpty"
+              ],
+              correctAnswers: {
+                "pi": ["blank1"],
+                "fruit": ["blank2"],
+                "add_num": ["blank3"],
+                "letterList": ["blank4"],
+                "coordinate": ["blank5"],
+                "stockQuantity": ["blank6"],
+                "isEmpty": ["blank7"]
+              }
             }
           ]
         },
@@ -100,35 +130,125 @@ const educationalContent = {
           exercises: [
             {
               type: "dragAndDrop",
-              title: "Practice - drag and drop fill in the blank",
+              title: "Practice - Comparison Results",
               description: "Fill in the correct comparison operator results",
               items: [
-                "print(1 > 0) ______",
-                "print(2 != 2) ______",
-                "print(hi == hi) _______",
-                "print(4 >= 1) ______",
-                "print(16 <= 16) ______",
-                "print(2 < 1) ______"
+                { id: "comp1", text: "print(1 > 0) ______", category: "True" },
+                { id: "comp2", text: "print(2 != 2) ______", category: "False" },
+                { id: "comp3", text: "print(hi == hi) _______", category: "True" },
+                { id: "comp4", text: "print(4 >= 1) ______", category: "True" },
+                { id: "comp5", text: "print(16 <= 16) ______", category: "True" },
+                { id: "comp6", text: "print(2 < 1) ______", category: "False" }
+              ],
+              correctAnswers: {
+                "True": ["comp1", "comp3", "comp4", "comp5"],
+                "False": ["comp2", "comp6"]
+              }
+            }
+          ]
+        },
+        {
+          title: "If Statements",
+          content: "If statements are used for conditional execution in Python. They allow your program to make decisions based on certain conditions.",
+          order: 5,
+          exercises: [
+            {
+              type: "multiBlankDragDrop",
+              title: "Practice - If Statements",
+              description: "Fill in the blanks to complete the if statements",
+              questions: [
+                {
+                  id: "q1",
+                  text: "Check if a student passed or failed:\n\nscore = 75\n___ score >= ____:\n    print(\"Passed!\")\n____:\n    print(\"Failed!\")",
+                  blanks: [
+                    { id: "b1", position: 1, correctAnswer: "if" },
+                    { id: "b2", position: 2, correctAnswer: "70" },
+                    { id: "b3", position: 3, correctAnswer: "else" }
+                  ]
+                },
+                {
+                  id: "q2",
+                  text: "Determine grade level:\n\ngrade = 85\n___ grade >= 90:\n    print(\"A\")\n____ grade >= 80:\n    print(\"B\")\n____ grade >= 70:\n    print(\"C\")\n____:\n    print(\"F\")",
+                  blanks: [
+                    { id: "b4", position: 1, correctAnswer: "if" },
+                    { id: "b5", position: 2, correctAnswer: "elif" },
+                    { id: "b6", position: 3, correctAnswer: "elif" },
+                    { id: "b7", position: 4, correctAnswer: "else" }
+                  ]
+                },
+                {
+                  id: "q3",
+                  text: "Check multiple conditions:\n\nage = 18\nhas_license = True\n\n___ age ___ 18 ___ has_license ___ True:\n    print(\"Can drive\")\n____:\n    print(\"Cannot drive\")",
+                  blanks: [
+                    { id: "b8", position: 1, correctAnswer: "if" },
+                    { id: "b9", position: 2, correctAnswer: ">=" },
+                    { id: "b10", position: 3, correctAnswer: "and" },
+                    { id: "b11", position: 4, correctAnswer: "==" },
+                    { id: "b12", position: 5, correctAnswer: "else" }
+                  ]
+                }
+              ],
+              possibleAnswers: [
+                "if", "elif", "else", "70", ">=", "==", "and", "True"
               ]
             }
           ]
         },
         {
-          title: "If Statements & Loops",
-          content: "In programming, if statements are used to execute a block of code if a conditional statement evaluates to true. For example, if a variable isOff is true, then turn the light on (isOff = False).\n\nIf you want to test another condition, Python has the keyword \"elif\". You can use this keyword as many times in between \"if\" and \"else\" statements. The else statement is executed when all conditional statements fail.\n\nBelow shows the format:\n\nif (condition):\n    # code\nelse:\n    # code\n\nif (condition #1):\n    # code\nelif (condition #2):\n    # code\nelse:\n    # code\n\nLoops are used in programming when an action needs to be repeated a certain number of times. There are three different kinds of loops: for loop, while loop, and nested loops.\n\nFor loops are extremely useful when iterating, or stepping, through a sequence of elements. For example, a list.\n\ncolors = ['red', 'blue', 'green']\nfor color in colors:\n    print(color)\n\n\"color\" refers to an element in the list while \"colors\" is the list itself. You can choose the name of the elements in the for loop, however, it should have meaning. Another important format of the for loop is using the range keyword. This is used when the programmer wants a block of code to be repeated a specific number of times without using something like a list.\n\nfor i in range(3):\n    print(i)\n\n\"i\" is the typical naming for an element. It is important to note that \"range(3)\" will not count using 1,2, and 3. Instead, Python begins at 0 so, the iteration will be 0,1, and 2.\n\nWhile loops will run a block of code as long as a condition is true. For example, the code below will keep printing \"The list is empty.\" until isEmpty is evaluated to false.\n\nisEmpty = True\nwhile(isEmpty):\n    print('The list is empty.\\n')\n\nNote: \"while(isEmpty)\" is a shorter way of stating \"while(isEmpty == True)\" and \"\\n\" means new line which will print the string on a new line in the output.\n\nHowever, this example is not practical because it will get stuck in an infinite loop, meaning there is nothing stopping the loop from terminating. When using while loops, make sure there is a condition that will allow the loop to stop.\n\nNested loops are useful when working with multidimensional data. In mathematics, matrices exist.\n\n0 1\n2 3\n\nIf you want to replicate this structure in code, it will look like lists inside of a list.\n\nmatrix = [[0,1],[2,3]]\n\nIn order to traverse, or iterate, through the list, you need a nested loop. Using for loops, this can be achieved.\n\nfor row in matrix:\n    for num in row:\n        print(num)\n\nOutput:\n0\n1\n2\n3\n\nThe nested loop will first iterate through a row, and then iterate through each element in that row.",
-          order: 4,
+          title: "Loops",
+          content: "Loops are used to repeat a block of code multiple times. Python has two main types of loops: for loops and while loops.",
+          order: 6,
           exercises: [
             {
-              type: "dragAndDrop",
-              title: "Practice - drag and drop fill in the blank",
-              description: "Fill in the correct code for if statements and loops",
-              items: [
-                "x = 4\nif (x > 3):\n    print('Hello')\nelse:\n    print('World')\n\nOutput: __________",
-                "total = 21.50\napplePrice = 2.00\norangePrice = 1.50\npeachPrice = 3.00\n\nif (applePrice < 2):\n    ______ = total + ______\n    print(______)\n____ (orangePrice < 2):\n    total = __________\n    print(total)\n____:\n    ______________\n_____(total)\nOutput: 23.00",
-                "states = [\"Ohio\", \"Wisconsin\", \"Florida\", \"Arizona\"]\nfor state __ ______:\n    if (______ == Florida):\n        print(\"Go Knights!\")\nOutput: Go Knights!",
-                "x = 3\nfor _ in range(_):\n    x = ____ * 3\n    print(x)\nOutput:\n3\n6\n9\n12\n15",
-                "balance = 100\ncookiePrice = 2.50\ntotalCookies = 0\n\n_____(balance _ 0):\n    _______ = balance - _________\n    totalCookies = _________ + _\n    print(totalCookies)\nOutput: _______",
-                "shoes = [[\"Nike\",8],[\"New Balance\",10],[\"Adidas\",7]]\n___ shoe in _____:\n    for element in ____:\n        print(_______, end=' ')\n    print()\nOutput:\nNike _\nNew Balance 10\n_____ 7"
+              type: "multiBlankDragDrop",
+              title: "Practice - Loops",
+              description: "Fill in the blanks to complete the loops",
+              questions: [
+                {
+                  id: "q1",
+                  text: "Create a simple for loop:\n\nfruits = ['apple', 'banana', 'orange']\n___ fruit ___ _____:\n    print(_____)",
+                  blanks: [
+                    { id: "b1", position: 1, correctAnswer: "for" },
+                    { id: "b2", position: 2, correctAnswer: "in" },
+                    { id: "b3", position: 3, correctAnswer: "fruits" },
+                    { id: "b4", position: 4, correctAnswer: "fruit" }
+                  ]
+                },
+                {
+                  id: "q2",
+                  text: "Create a while loop with a counter:\n\ncount = 0\n_____ count < 5:\n    print(count)\n    count = count ___ 1",
+                  blanks: [
+                    { id: "b5", position: 1, correctAnswer: "while" },
+                    { id: "b6", position: 2, correctAnswer: "+" }
+                  ]
+                },
+                {
+                  id: "q3",
+                  text: "Nested loop with range:\n\n___ i ___ _____(3):\n    ___ j ___ range(___):\n        print(f\"Position: {i},{j}\")",
+                  blanks: [
+                    { id: "b7", position: 1, correctAnswer: "for" },
+                    { id: "b8", position: 2, correctAnswer: "in" },
+                    { id: "b9", position: 3, correctAnswer: "range" },
+                    { id: "b10", position: 4, correctAnswer: "for" },
+                    { id: "b11", position: 5, correctAnswer: "in" },
+                    { id: "b12", position: 6, correctAnswer: "3" }
+                  ]
+                },
+                {
+                  id: "q4",
+                  text: "Loop with break statement:\n\n___ i ___ _____(10):\n    ___ i == 5:\n        _____\n    print(i)",
+                  blanks: [
+                    { id: "b13", position: 1, correctAnswer: "for" },
+                    { id: "b14", position: 2, correctAnswer: "in" },
+                    { id: "b15", position: 3, correctAnswer: "range" },
+                    { id: "b16", position: 4, correctAnswer: "if" },
+                    { id: "b17", position: 5, correctAnswer: "break" }
+                  ]
+                }
+              ],
+              possibleAnswers: [
+                "for", "in", "while", "range", "break", "continue",
+                "fruits", "fruit", "+", "3", "if"
               ]
             }
           ]
@@ -139,15 +259,42 @@ const educationalContent = {
           order: 5,
           exercises: [
             {
-              type: "dragAndDrop",
-              title: "Practice - drag and drop fill in the blank",
-              description: "Fill in the correct code for data structures",
-              items: [
-                "Tuple Unpacking: Traverse the coordinate list to decrease the x value by 1 and increase the y value by 1.\n\ncoordinateList = [(2,8),(7,3),(2,1)]\nfor ___ in __________:\n    x = _____\n    y = _____\n    print(x,y)",
-                "set1 = {1,8,4,5,7,3}\nset2 = {2,3,9,4,5,6,1}\n\nset1.union(set2) ________\nlen(set1) ________\nset1.intersection(set2) ________\nset1.difference(set2) ________\nset2.difference(set1) ________\nlen(set2) ________",
-                "Fill in the blank: Update the address street to 5678 Longhorn Dr. and delete the key \"age\" because it doesn't belong in an address.\n\naddress = {'streetNum':1234,'streetName':'Berry Ln.','city':'Fruit City','state':'Texas','zip':67543,'age':7}\n\naddress.______({'streetNum':_____, _______:_______}\n___ address[____]\nprint(address)",
-                "Fill in the blank: Add a flamingo to the list and sort the animals. Then count how many animals in the animals list are also pets. Print out the result.\n\nanimals = [\"zebra\",\"lion\",\"dog\",\"cat\"]\npets = [\"cat\",\"fish\",\"dog\",\"hamster\"]\npetCount = 0\n\nanimals._______(________)\nanimals._____\n___ animal in _______:\n    for pet __ ____:\n        __ (animal ___ pet):\n            petCount = ______ + _\nprint(petCount)",
-                "Fill in the blank: Properly create the array and find the double-digit number and delete it.\n\nimport ______ as np\nnums = ______([2,3,5,6,7,11,9])\nnewNums = []\nfor i in range(len(___)):\n    if(_____ >= 10):\n        newNums = np.delete(nums, _)\nprint(newNums)"
+              type: "multiBlankDragDrop",
+              title: "Practice - Data Structures",
+              description: "Fill in the blanks for each data structure operation",
+              questions: [
+                {
+                  id: "q1",
+                  text: "Tuple Unpacking: Traverse the coordinate list to decrease the x value by 1 and increase the y value by 1.\n\ncoordinateList = [(2,8),(7,3),(2,1)]\nfor ___ in __________:\n    x = _____\n    y = _____\n    print(x-1,y+1)",
+                  blanks: [
+                    { id: "b1", position: 1, correctAnswer: "coord" },
+                    { id: "b2", position: 2, correctAnswer: "coordinateList" },
+                    { id: "b3", position: 3, correctAnswer: "coord[0]" },
+                    { id: "b4", position: 4, correctAnswer: "coord[1]" }
+                  ]
+                },
+                {
+                  id: "q2",
+                  text: "Set Operations:\n\nset1 = {1,8,4,5,7,3}\nset2 = {2,3,9,4,5,6,1}\n\nprint(set1._____(set2))  # Combine sets\nprint(set1._____(set2))  # Find common elements\nprint(set1._____(set2))  # Elements in set1 but not in set2",
+                  blanks: [
+                    { id: "b5", position: 1, correctAnswer: "union" },
+                    { id: "b6", position: 2, correctAnswer: "intersection" },
+                    { id: "b7", position: 3, correctAnswer: "difference" }
+                  ]
+                },
+                {
+                  id: "q3",
+                  text: "Dictionary Operations:\n\naddress = {'streetNum':1234,'streetName':'Berry Ln.','city':'Fruit City','state':'Texas','zip':67543,'age':7}\n\naddress.____({'streetNum':5678, 'streetName':'Longhorn Dr.'})  # Update values\ndel address[____]  # Remove age key\nprint(address)",
+                  blanks: [
+                    { id: "b8", position: 1, correctAnswer: "update" },
+                    { id: "b9", position: 2, correctAnswer: "'age'" }
+                  ]
+                }
+              ],
+              possibleAnswers: [
+                "coord", "coordinateList", "coord[0]", "coord[1]",
+                "union", "intersection", "difference",
+                "update", "'age'"
               ]
             }
           ]
@@ -173,12 +320,32 @@ const educationalContent = {
           order: 7,
           exercises: [
             {
-              type: "dragAndDrop",
-              title: "Practice - drag and drop fill in the blank",
-              description: "Fill in the correct code for functions",
-              items: [
-                "___ get_user_name():\n    name = ______(\"Name: \")\n    print(______)\n\n_______________",
-                "___ temperature_conversion(____):\n    celsius = (temp – 32)/1.8\n    ______ celsius\n\nfahrenheit = 70\ncelsius = ______________(________)"
+              type: "multiBlankDragDrop",
+              title: "Practice - Functions",
+              description: "Fill in the blanks to complete the functions",
+              questions: [
+                {
+                  id: "q1",
+                  text: "Create a function to get and display a user's name:\n\n___ get_user_name():\n    name = ______(\"Name: \")\n    print(f\"Hello, {____}!\")\n\nget_user_name()",
+                  blanks: [
+                    { id: "b1", position: 1, correctAnswer: "def" },
+                    { id: "b2", position: 2, correctAnswer: "input" },
+                    { id: "b3", position: 3, correctAnswer: "name" }
+                  ]
+                },
+                {
+                  id: "q2",
+                  text: "Create a temperature conversion function:\n\n___ temperature_conversion(____):\n    celsius = (temp - 32) / 1.8\n    ______ celsius\n\nfahrenheit = 70\ncelsius = temperature_conversion(________)",
+                  blanks: [
+                    { id: "b4", position: 1, correctAnswer: "def" },
+                    { id: "b5", position: 2, correctAnswer: "temp" },
+                    { id: "b6", position: 3, correctAnswer: "return" },
+                    { id: "b7", position: 4, correctAnswer: "fahrenheit" }
+                  ]
+                }
+              ],
+              possibleAnswers: [
+                "def", "input", "name", "temp", "return", "fahrenheit"
               ]
             }
           ]
@@ -204,15 +371,28 @@ const educationalContent = {
           order: 9,
           exercises: [
             {
-              type: "dragAndDrop",
-              title: "Practice - drag and drop match",
-              description: "Match the correct error types with their examples",
-              items: [
-                "try:\n    myDict = [\"apple\":2]\n    print(myDict[\"orange\"])\nexcept ________ as e:\n    print(f\"Error: {e}\")",
-                "try:\n    myList = [1,5,3]\n    print(myList[6])\nexcept ________ as e:\n    print(f\"Error: {e}\")",
-                "try:\n    print(\"hello\"\nexcept ________ as e:\n    print(f\"Error: {e}\")",
-                "try:\n    1 + 'two'\nexcept ________ as e:\n    print(f\"Error: {e}\")",
-                "try:\n    if(x > 6):\n        print(\"Greater than 6\")\nexcept ________ as e:\n    print(f\"Error: {e}\")"
+              type: "multiBlankDragDrop",
+              title: "Practice - Error Types",
+              description: "Fill in the correct error types for each code example",
+              questions: [
+                {
+                  id: "q1",
+                  text: "Handle dictionary and key errors:\n\ntry:\n    myDict = {\"apple\":2}\n    print(myDict[\"orange\"])\nexcept ________ as e:\n    print(f\"Error: {e}\")",
+                  blanks: [
+                    { id: "b1", position: 1, correctAnswer: "KeyError" }
+                  ]
+                },
+                {
+                  id: "q2",
+                  text: "Handle list index errors:\n\ntry:\n    myList = [1,5,3]\n    print(myList[6])\nexcept ________ as e:\n    print(f\"Error: {e}\")\nexcept ________ as e:\n    print(f\"Error: {e}\")",
+                  blanks: [
+                    { id: "b2", position: 1, correctAnswer: "IndexError" },
+                    { id: "b3", position: 2, correctAnswer: "TypeError" }
+                  ]
+                }
+              ],
+              possibleAnswers: [
+                "KeyError", "IndexError", "TypeError", "ValueError", "SyntaxError"
               ]
             }
           ]
@@ -243,6 +423,179 @@ const educationalContent = {
               description: "Fill in the correct code for using imported libraries",
               items: [
                 "import ______ as np\n\n# Create an array of numbers from 1 to 10\nnumbers = np.______(1, 11)\n\n# Calculate the square root of each number\nsquared = np.______(numbers)\n\nprint(squared)"
+              ]
+            }
+          ]
+        },
+        {
+          title: "Multiple Blanks Practice",
+          content: "This section focuses on practicing Python code with multiple blanks in a single question.",
+          order: 9,
+          exercises: [
+            {
+              type: "multiBlankDragDrop",
+              title: "Practice - Multiple Blanks per Question",
+              description: "Fill in multiple blanks for each Python code snippet",
+              questions: [
+                {
+                  id: "q1",
+                  text: "Complete the function to calculate the area of a rectangle:\n\ndef calculate_area(____, _____):\n    return length * _____",
+                  blanks: [
+                    { id: "b1", position: 1, correctAnswer: "length" },
+                    { id: "b2", position: 2, correctAnswer: "width" },
+                    { id: "b3", position: 3, correctAnswer: "width" }
+                  ]
+                },
+                {
+                  id: "q2",
+                  text: "Create a list comprehension that squares even numbers:\n\nnumbers = [1, 2, 3, 4, 5]\nsquared_evens = [x**2 for x in _____ if x % ____ == ____]",
+                  blanks: [
+                    { id: "b4", position: 1, correctAnswer: "numbers" },
+                    { id: "b5", position: 2, correctAnswer: "2" },
+                    { id: "b6", position: 3, correctAnswer: "0" }
+                  ]
+                },
+                {
+                  id: "q3",
+                  text: "Write a for loop that prints each character of a string:\n\nword = \"Python\"\nfor ____ in range(len(____)): \n    print(word[____])",
+                  blanks: [
+                    { id: "b7", position: 1, correctAnswer: "i" },
+                    { id: "b8", position: 2, correctAnswer: "word" },
+                    { id: "b9", position: 3, correctAnswer: "i" }
+                  ]
+                }
+              ],
+              possibleAnswers: [
+                "length", "width", "numbers", "2", "0", "i", "word"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      title: "Introduction to ROS 2",
+      description: "Welcome to Module 2! From now on, you will be learning Python programming through practical robotic scenarios. In this specific module, you will be introduced to ROS, or Robot Operating System, concepts and the pre-built Gazebo robotic arm, UR5.",
+      order: 2,
+      sections: [
+        {
+          title: "What is ROS?",
+          content: "In technological fields, operating systems (OS) manage various components of a computer, allowing them to work effectively with each other. When you press a button on the keyboard, the OS interprets this action and displays the correct symbol on the screen. By running software, operating hardware, and organizing memory, they make it easier for a user to focus on their own tasks without worrying about computer functionality.\n\nSimilarly, Robot Operating System (ROS) is a tool that developers need to build the several different pieces of a robot. Although it has \"operating system\" in its name, ROS is not an operating system but rather a framework that provides tools to make those various parts communicate with each other. For example, if you are constructing a robot with a motor, the motor needs to know how fast to move and which direction the vehicle needs to travel. Therefore, the motor controller node needs to communicate with the velocity and positioning nodes.\n\nNodes are programs that will perform a specific task for a robot. As mentioned above, the motor controller node will control the movement of a robot (e.g. the wheels). Each node will generally have one specified task for each component of the robot.",
+          order: 1,
+          exercises: [
+            {
+              type: "dragAndDrop",
+              title: "Practice - Publisher/Subscriber Matching",
+              description: "In each scenario, match the node name to whether it acts like a publisher or subscriber. Think about which one would be sending data and which is receiving.",
+              items: [
+                { id: "email", text: "Sent Email Message", category: "Publisher" },
+                { id: "outlook", text: "Outlook", category: "Subscriber" },
+                { id: "doordash", text: "DoorDash Application", category: "Publisher" },
+                { id: "customer_notif", text: "Customer Notification", category: "Subscriber" },
+                { id: "amazon", text: "Amazon Website", category: "Subscriber" },
+                { id: "order", text: "Customer Order", category: "Publisher" },
+                { id: "graph", text: "Graph", category: "Subscriber" },
+                { id: "coordinate", text: "Coordinate", category: "Publisher" },
+                { id: "music", text: "Music on a phone", category: "Publisher" },
+                { id: "headphones", text: "Headphones", category: "Subscriber" }
+              ]
+            }
+          ]
+        },
+        {
+          title: "ROS 2 Nodes",
+          content: "Nodes are blocks of code that will execute certain tasks for a robot. We are going to use ROS 2, an upgraded version of ROS that is compatible with newer software. To properly create a ROS 2 node, you first need to import the necessary libraries and resources required for programming in Python. Without these, ROS nodes cannot perform their intended functions.\n\nFirst, when you intend to use ROS 2 functions, you need to import its library:\n\nimport rclpy\n\nThen, in order to create a node, you must import the Node class from the rclpy library:\n\nfrom rclpy.node import Node\n\nIMPORTANT functions:\nLog information to ROS 2 → self.get_logger().info('Running node…')\nCreate timers → self.create_timer(1, self.timer_callback)\n- In seconds\n- Callback function handles what happens during the timer",
+          order: 2,
+          exercises: [
+            {
+              type: "dragAndDrop",
+              title: "Practice - Create a Node",
+              description: "Create a node called 'every_two_seconds' that will log information to ROS in 2 second increments.",
+              items: [
+                "#!/usr/bin/env python3",
+                "import rclpy",
+                "from rclpy.node import Node",
+                "class MyNode(Node):",
+                "def __init__(self):",
+                "super().__init__('every_two_seconds')",
+                "self.create_timer(2.0, self.print_message)",
+                "def print_message(self):",
+                "self.get_logger().info(\"Battery is fully charged…\")",
+                "def main():",
+                "rclpy.init()",
+                "node = MyNode()",
+                "rclpy.spin(node)",
+                "rclpy.shutdown()",
+                "if __name__ == '__main__':",
+                "main()"
+              ]
+            }
+          ]
+        },
+        {
+          title: "ROS 2 Subscribers",
+          content: "Subscribers listen for data. When writing them for a specific topic, it is important that the data message they are listening for is the same type as the data being published. For example, \"battery_message\" is a publisher that sends a String message saying the battery is empty. A user needs to be notified when this happens.\n\nTo create subscribers, the rclpy library provides a Subscriber function. It takes the type of data to listen for, the name of a topic, a function called every time data is received, and the queue size, or the maximum size of messages that can be stored at a time.\n\nBefore you create a subscriber, you need to know a few important things:\nsensor_msgs/BatteryState is a ROS 2 message type that contains various attributes related to a battery's status, including:\n- voltage = battery voltage\n- charge = remaining charge\n- capacity = charge capacity\n- percentage = current battery percentage\n- power_supply_status = charge status",
+          order: 3,
+          exercises: [
+            {
+              type: "dragAndDrop",
+              title: "Practice - Create a Subscriber",
+              description: "Create a subscriber called 'blue_battery_status' that will log all battery information to ROS.",
+              items: [
+                "#!/usr/bin/env python3",
+                "import rclpy",
+                "from rclpy.node import Node",
+                "from std_msgs.msg import Bool",
+                "class BatteryInfo(Node):",
+                "def __init__(self):",
+                "super().__init__('blue_battery_status')",
+                "self.subscription = self.create_subscription(",
+                "BatteryState,",
+                "'/model/vehicle_blue/battery/linear_battery/state',",
+                "self.receive_message,",
+                "10",
+                ")",
+                "def receive_message(self, msg):",
+                "self.get_logger().info(f\"Voltage: {msg.voltage}\")",
+                "self.get_logger().info(f\"Charge: {msg.charge}\")",
+                "self.get_logger().info(f\"Capacity: {msg.capacity}\")",
+                "self.get_logger().info(f\"Percentage: {msg.percentage}\")",
+                "self.get_logger().info(f\"Power Status: {msg.power_supply_status}\")"
+              ]
+            }
+          ]
+        },
+        {
+          title: "ROS 2 Publishers",
+          content: "ROS 2 topics act like bridges between nodes that send and receive data. A single topic can have multiple publishers and subscribers connected to it, each dealing with different types of data. However, for simplicity, you will start by creating a topic that has one publisher and subscriber, both sending and receiving the same type of data. Remember, a topic is not a physical file like publisher and subscriber nodes.\n\nIn ROS 2, a publisher is created by using the rclpy library. It takes three arguments: the type of data being published, the name of the topic, and the queue size.",
+          order: 4,
+          exercises: [
+            {
+              type: "dragAndDrop",
+              title: "Practice - Create a Publisher",
+              description: "Create a publisher that updates battery percentage and prints status messages based on the percentage level.",
+              items: [
+                "import rclpy",
+                "from rclpy.node import Node",
+                "from sensor_msgs.msg import BatteryState",
+                "class UpdateBattery(Node):",
+                "def __init__(self):",
+                "super().__init__('update_blue_battery')",
+                "self.publisher_ = self.create_publisher(",
+                "BatteryState,",
+                "'/model/vehicle_blue/battery/linear_battery/state',",
+                "10",
+                ")",
+                "def update_battery(self, perc_list):",
+                "msg = BatteryState()",
+                "for perc in perc_list:",
+                "msg.percentage = perc",
+                "self.publisher_.publish(msg)",
+                "percentage = round(perc*100)",
+                "if percentage == 0:",
+                "self.get_logger().info('Status: DEAD')",
+                "elif percentage <= 20:",
+                "self.get_logger().info('Status: LOW')"
               ]
             }
           ]

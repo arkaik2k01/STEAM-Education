@@ -1,22 +1,24 @@
 import React from 'react';
-import { Route, Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
-function ProtectedRoute({ children, role, ...rest }) {
+function ProtectedRoute({ children, role }) {
   const { currentUser, userRole } = useAuth();
+  const location = useLocation();
 
-  return (
-    <Route
-      {...rest}
-      render={({ location }) =>
-        currentUser && (!role || userRole === role) ? (
-          children
-        ) : (
-          <Navigate to="/signin" state={{ from: location }} />
-        )
-      }
-    />
-  );
+  if (!currentUser) {
+    return <Navigate to="/signin" state={{ from: location }} replace />;
+  }
+
+  if (role && userRole !== role) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  if (typeof children === 'function') {
+    return children({ userRole });
+  }
+
+  return children;
 }
 
 export default ProtectedRoute; 

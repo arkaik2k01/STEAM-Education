@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
-import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { getFunctions } from 'firebase/functions';
 
 // Firebase configuration object containing keys and identifiers for your app
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -23,14 +23,6 @@ const auth = getAuth(app); // Authentication service
 const db = getFirestore(app); // Firestore database service
 const func = getFunctions(app); // Cloud Functions service
 const googleProv = new GoogleAuthProvider(); // Google Auth provider for OAuth
-
-// Emulator setup for development environment
-if (process.env.NODE_ENV === 'development') {
-  console.log("Using Emulators...");
-  connectAuthEmulator(auth, "http://localhost:9099"); // Connect to Auth emulator
-  connectFirestoreEmulator(db, "localhost", 8080); // Connect to Firestore emulator
-  connectFunctionsEmulator(func, "localhost", 5001); // Connect to Functions emulator
-}
 
 export {
   app,
