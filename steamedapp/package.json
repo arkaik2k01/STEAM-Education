@@ -25,7 +25,12 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "emulators": "firebase emulators:start --import test-data",
+    "test:firestore": "firebase emulators:exec --only firestore 'jest src/firebase/firestore.test.js'",
+    "test-db": "node src/firebase/testDb.js",
+    "import-content": "node src/scripts/importContent.js",
+    "verify-content": "node src/scripts/verifyContent.js"
   },
   "eslintConfig": {
     "extends": [
