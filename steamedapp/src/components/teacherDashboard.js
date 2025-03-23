@@ -5,6 +5,7 @@ const TeacherDashboard = ({ teacherClasses, onStudentDelete, onClassCreate, onCl
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [expandedClasses, setExpandedClasses] = useState({});
+  const [copyFeedback, setCopyFeedback] = useState(''); // For copy feedback
   
   // Class management state
   const [newClassName, setNewClassName] = useState('');
@@ -14,12 +15,35 @@ const TeacherDashboard = ({ teacherClasses, onStudentDelete, onClassCreate, onCl
 
   // Toggle class expansion states
   const toggleClassExpansion = (classId) => {
-    setExpandedClasses(prev => ({
-      ...prev,
-      [classId]: !prev[classId]
-    }));
-    
-    setSelectedClass(classId);
+    // If clicking the already selected class, toggle its expansion state
+    if (selectedClass === classId) {
+      setExpandedClasses(prev => ({
+        ...prev,
+        [classId]: !prev[classId]
+      }));
+      
+      // If we're collapsing a class, also deselect it
+      if (expandedClasses[classId]) {
+        setSelectedClass(null);
+      }
+    } else {
+      // Clicking a different class
+      setExpandedClasses(prev => ({
+        ...prev,
+        [classId]: true  // Expand the clicked class
+      }));
+      
+      // Set as the selected class
+      setSelectedClass(classId);
+    }
+  };
+
+  // Detects clicks outside class to update states properly
+  const handleBackgroundClick = (e) => {
+    // Only handle clicks directly on the container, not on its children
+    if (e.target === e.currentTarget) {
+      setSelectedClass(null);
+    }
   };
 
   // Handle student selection, update selected student state
@@ -51,7 +75,7 @@ const TeacherDashboard = ({ teacherClasses, onStudentDelete, onClassCreate, onCl
     }
   };
 
-  // Create a new class with the entered name
+  // Create a new class with the entered name - delegated to parent component
   const handleCreateClass = () => {
     if (newClassName.trim()) {
       onClassCreate(newClassName.trim());
@@ -71,15 +95,8 @@ const TeacherDashboard = ({ teacherClasses, onStudentDelete, onClassCreate, onCl
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#201E1E' }}>
-      {/* Header */}
-      <header className="w-full p-4 sticky top-0 z-10" style={{ backgroundColor: '#828282' }}>
-        <div className="container mx-auto">
-          <h1 className="text-2xl font-bold text-white">Teacher Dashboard</h1>
-        </div>
-      </header>
-
       {/* Main content */}
-      <div className="container mx-auto p-4">
+      <div className="container mx-auto p-4" onClick={handleBackgroundClick}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left side: Classes and students list */}
           <div className="lg:col-span-2">
@@ -243,16 +260,34 @@ const TeacherDashboard = ({ teacherClasses, onStudentDelete, onClassCreate, onCl
                 </h2>
                 <div className="flex items-center justify-between bg-opacity-20 bg-gray-800 p-4 rounded-lg">
                   <div>
-                    <span className="text-gray-400 block mb-1">Class ID (for student registration):</span>
-                    <span className="text-white font-mono">{selectedClass}</span>
+                    <span className="text-gray-400 block mb-1">Class Code (for student registration):</span>
+                    <span className="text-white font-mono text-xl">{teacherClasses.find(c => c.id === selectedClass)?.classCode || 'No code available'}</span>
                   </div>
                   <button 
-                    onClick={() => navigator.clipboard.writeText(selectedClass)}
+                    onClick={() => {
+                      const classCode = teacherClasses.find(c => c.id === selectedClass)?.classCode;
+                      if (classCode) {
+                        navigator.clipboard.writeText(classCode);
+                        setCopyFeedback('Code copied to clipboard!');
+                        
+                        // Clear the feedback message after 3 seconds
+                        setTimeout(() => {
+                          setCopyFeedback('');
+                        }, 3000);
+                      }
+                    }}
                     className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                   >
-                    Copy ID
+                    Copy Code
                   </button>
                 </div>
+                
+                {/* Feedback message */}
+                {copyFeedback && (
+                  <div className="mt-2 p-2 bg-green-900 bg-opacity-20 text-green-200 border border-green-500 rounded text-center animate-fade-in-out">
+                    {copyFeedback}
+                  </div>
+                )}
               </div>
             )}
           </div>

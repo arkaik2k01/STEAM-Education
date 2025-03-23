@@ -30,13 +30,6 @@ const StudentDashboard = ({ studentModules, onModuleSelect }) => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#201E1E' }}>
-      {/* Header */}
-      <header className="w-full p-4 sticky top-0 z-10" style={{ backgroundColor: '#828282' }}>
-        <div className="container mx-auto">
-          <h1 className="text-2xl font-bold text-white">Student Dashboard</h1>
-        </div>
-      </header>
-
       {/* Main content */}
       <div className="container mx-auto p-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
