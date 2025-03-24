@@ -1,77 +1,85 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; 
+import './GzWebFrame.css';
+import { SceneManager } from 'gzweb'; 
 
-export const GzWebFrame = ({ endpoint }) => {
-    const [gzWebURL, setGzWebURL] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+// Create react functional component 
+const GzWebFrame = () => {
 
-    // Fetch URL to display
-    const fetchGzWebURL = async () => {
-        if (!endpoint) {
-            setError(new Error('No endpoint provided'));
-            setLoading(false);
-            return;
+    // Create state variables and setter functions 
+    const [wsUrl, setWsUrl] = useState(''); // websocket URL
+    const [sceneManager, setSceneManager] = useState(null); // SceneManager instance
+    const [connectionStatus, setConnectionStatus] = useState(false); // Tracks connection status 
+
+    // Create reference to container where simulation is rendered
+    const containerRef = useRef(null);
+
+    // Handle connection to simulation status updates
+    useEffect(() => {
+        if (sceneManager) {
+            const subscription = sceneManager.getConnectionStatusAsObservable().subscribe(
+                (status) => {
+                    setConnectionStatus(status); 
+                }
+            );
+            return () => {
+                subscription.unsubscribe(); 
+            };
         }
-        setLoading(true);
-        setError(null);
+    }, [sceneManager]);
 
-        try {
-            const response = await fetch(endpoint); // URL END POINT GOES HERE
-            if (!response.ok) {
-                throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
-            }
-            const message = await response.json();
+    // Connect to simulation, creates new SceneManager instance 
+    const connect = () => {
+        const manager = new SceneManager({
+            websocketUrl: wsUrl,
+            websocketKey: '',
+            elementId: 'container',
+        }); 
+        setSceneManager(manager); 
+    };
 
-            if (message && message.url) { // MIGHT HAVE TO CHANGE DEPENDING OF FORMATTING OF END POINTS
-                setGzWebURL(message.url);
-            } else {
-                throw new Error("A unexpected message was received. Wrong formatting or wrong message");
-            }
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false); // Finalize loading
+    // Take a snapshot of the simulation
+    const snapshot = () => {
+        if (sceneManager) {
+            sceneManager.snapshot(); 
         }
     };
 
-    //On mount, we fetch the URL
-    useEffect(() => {
-        fetchGzWebURL();
-    }, [endpoint]);
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-full bg-opacity-10 bg-white">
-                <div className="text-white">Loading simulation...</div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="flex items-center justify-center h-full bg-opacity-10 bg-white">
-                <div className="text-red-400 p-4">
-                    Error loading simulation: {error.message}
-                </div>
-            </div>
-        );
-    }
-
+    // Reset view of the simulation
+    const resetView = () => {
+        if (sceneManager) {
+            sceneManager.resetView(); 
+        }
+    };
 
     return (
-        <div className="h-full w-full">
-            {gzWebURL ? (
-                <iframe
-                    src={gzWebURL}
-                    title="GzWeb Simulation Viewer"
-                    className="w-full h-full border-none"
-                    sandbox="allow-scripts allow-same-origin"
-                />
-            ) : (
-                <div className="flex items-center justify-center h-full bg-opacity-10 bg-white">
-                    <div className="text-white">No simulation URL available</div>
+        <>
+            <section>
+                <div className="form-field"> 
+                    <input 
+                        id="wsUrl"
+                        type="text"
+                        value={wsUrl}
+                        onChange={(e) => setWsUrl(e.target.value)}
+                        placeholder="websocket URL"
+                        />
                 </div>
-            )}
-        </div>
-    )
-}
+
+                {(!sceneManager || !connectionStatus) && (
+                    <button className="primary-button" onClick={connect}>Connect</button>
+                )}
+                
+                {sceneManager && connectionStatus && (
+                    <React.Fragment>
+                        <button className="primary-button" onClick={snapshot}>Take Screenshot</button>
+                        <button className="primary-button" onClick={resetView}>Reset View</button>
+                    </React.Fragment>
+                )}
+
+            </section>
+            <div id="container" ref={containerRef}></div>
+        </>
+    );
+
+};
+
+export { GzWebFrame };
