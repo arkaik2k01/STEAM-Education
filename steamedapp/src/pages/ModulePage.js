@@ -6,8 +6,6 @@ import { MonPyEditor } from '../components/ModulePage/MonPyEditor';
 import { FillInTheBlank } from '../components/ModulePage/FillInTheBlank/FillInTheBlank';
 import { GzWebFrame } from '../components/ModulePage/GzWebFrame';
 import { requestModuleSimulation } from '../firebase/services/infrastructureService';
-import PageHeader from '../components/PageHeader';
-import { auth } from '../firebase/services/auth';
 
 const ModulePage = (props) => {
   const params = useParams();
@@ -31,7 +29,7 @@ const ModulePage = (props) => {
         setModuleData(module);
 
         // Mock user ID - Replace with actual user ID from auth
-        const userId = auth.currentUser ? auth.currentUser.uid : "test-user";
+        const userId = "test-user";
 
         // Request simulation infrastructure
         try {
@@ -152,11 +150,8 @@ const ModulePage = (props) => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#201E1E' }}>
-        <PageHeader title="Loading Module..." userRole="student" />
-        <div className="flex items-center justify-center h-[calc(100vh-64px)]">
-          <div className="text-white text-xl">Loading module content...</div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#201E1E' }}>
+        <div className="text-white text-xl">Loading module content...</div>
       </div>
     );
   }
@@ -164,11 +159,8 @@ const ModulePage = (props) => {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#201E1E' }}>
-        <PageHeader title="Module Error" userRole="student" />
-        <div className="flex items-center justify-center h-[calc(100vh-64px)]">
-          <div className="text-red-400 text-xl">{error}</div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#201E1E' }}>
+        <div className="text-red-400 text-xl">{error}</div>
       </div>
     );
   }
@@ -176,30 +168,29 @@ const ModulePage = (props) => {
   // A module with the given ID was not found
   if (!moduleData) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#201E1E' }}>
-        <PageHeader title="Module Not Found" userRole="student" />
-        <div className="flex items-center justify-center h-[calc(100vh-64px)]">
-          <div className="text-white text-xl">Module not found</div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#201E1E' }}>
+        <div className="text-white text-xl">Module not found</div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#201E1E' }}>
-      {/* Header with module title */}
-      <PageHeader title={moduleData.title || "Module"} userRole="student" />
-      
-      {/* Progress bar */}
-      <div className="w-full bg-gray-700 h-2">
-        <div 
-          className="h-full transition-all duration-300" 
-          style={{ 
-            width: `${calculateProgress()}%`,
-            backgroundColor: '#0A3C91'
-          }}
-        />
-      </div>
+      {/* Header */}
+      <header className="w-full p-4 sticky top-0 z-10" style={{ backgroundColor: '#828282' }}>
+        <div className="container mx-auto">
+          <h1 className="text-2xl font-bold text-white">{moduleData.title}</h1>
+          <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+            <div 
+              className="h-full rounded-full transition-all duration-300" 
+              style={{ 
+                width: `${calculateProgress()}%`,
+                backgroundColor: '#0A3C91'
+              }}
+            />
+          </div>
+        </div>
+      </header>
 
       {/* Main content */}
       <div className="container mx-auto p-4">
