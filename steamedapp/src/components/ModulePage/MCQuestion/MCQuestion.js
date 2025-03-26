@@ -3,7 +3,7 @@ import { testData, fetchMCQuestion } from "../../../utils/fetchMCQuestion";
 import { MCAnswers } from "./MCAnswers";
 
 // Endpoint URL is assigned on the module page
-export const MCQuestion = ({ questionData, onComplete }) => {
+export const MCQuestion = ({ mcq_content, onComplete }) => {
   const [feedback, setFeedback] = useState({}); // Tracks feedback for each answer
   const hasCompletedRef = useRef(false); // Track if onComplete has been called, prevents infinite loop
 
@@ -24,12 +24,12 @@ export const MCQuestion = ({ questionData, onComplete }) => {
     <div className='w-full max-w-2xl mx-auto'>
       <h2 className='text-xl font-semibold text-white mb-6'>
         {/* Display question */}
-        {questionData.question}
+        {mcq_content.question}
       </h2>
       {/* Display and build answer component */}
       <MCAnswers 
-        options={questionData?.options || []}
-        correctAnswer={questionData.correctAnswer}
+        options={mcq_content?.options || []}
+        correctAnswer={mcq_content.correctAnswer}
         feedback={feedback}
         setFeedback={setFeedback}
       />

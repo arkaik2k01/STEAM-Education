@@ -1,107 +1,147 @@
 import React, { useState, useEffect } from 'react';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { DraggableKeyword } from './DraggableKeyword';
-import { DroppableText } from './DroppableText';
-import { SubmitButton } from './SubmitButton';
+import { parseFillInBlankContent } from './utils/contentParser';
+import { DragAndDropExercise } from './exercise-types/DragAndDropExercise';
+import { MultiBlankExercise } from './exercise-types/MultiBlankExercise';
 
-
-export const FillInTheBlank = ({ content, onComplete }) => {
-    // State to store the keywords
+/*
+ * FillInTheBlank - Main component for drag and drop fill-in-the-blank exercises
+ */
+export const FillInTheBlank = ({ fib_content, onComplete }) => {
+    // State to store the answers for each blank
     const [answers, setAnswers] = useState({});
-    const [locked, setLocked] = useState(false);
+    // State to store validation results for each blank
+    const [validationResults, setValidationResults] = useState({});
+    // State to track exercise completion
+    const [isCompleted, setIsCompleted] = useState(false);
     // State to store the parsed text segments and blank positions
     const [textSegments, setTextSegments] = useState([]);
+    // State to store the keywords that can be dragged
     const [keywords, setKeywords] = useState([]);
+    // State to track exercise type (dragAndDrop or multiBlankDragDrop)
+    const [exerciseType, setExerciseType] = useState('');
+    // State to track feedback message
+    const [feedback, setFeedback] = useState('');
 
-    //On mount, fetch content. Finally, set our loading to done
+    // On mount, determine the exercise type and parse content
     useEffect(() => {
-        if (!content) return;
+        if (!fib_content) return;
 
-        // Parse the text to identify blanks using consecutive "_" characters 
-        const segments = [];
+        // Parse the content based on its structure
+        const { type, segments, possibleAnswers } = parseFillInBlankContent(fib_content);
 
-        // Use regex to split the text by consecutive underscores
-        const regex = /_{1,}/g; // Match 1 or more consecutive underscores
-        let lastIndex = 0;
-        let blankIndex = 0;
-        let match;
-
-        // Find all matches of consecutive underscores
-        while ((match = regex.exec(content.text)) !== null) {
-            // Add the text segment before this blank
-            if (match.index > lastIndex) {
-                segments.push({
-                    type: 'text',
-                    content: content.text.substring(lastIndex, match.index)
-                });
-            }
-
-            // Add the blank
-            segments.push({
-                type: 'blank',
-                id: `blank-${blankIndex}`
-            });
-            blankIndex++;
-
-            // Update lastIndex to continue after this blank
-            lastIndex = match.index + match[0].length;
-        }
-
-        // Add any remaining text after the last blank
-        if (lastIndex < content.text.length) {
-            segments.push({
-                type: 'text',
-                content: content.text.substring(lastIndex)
-            });
-        }
-
-        // Set the parsed text segments and blank positions
+        setExerciseType(type);
         setTextSegments(segments);
 
-        // Shuffle the answers and set the keywords
-        if (content.answers) {
-            setKeywords(shuffleArray([...content.answers]));
+        // Shuffle and set the keywords
+        if (possibleAnswers && Array.isArray(possibleAnswers)) {
+            setKeywords(shuffleArray([...possibleAnswers]));
         }
-    }, [content]);
+    }, [fib_content]);
 
-    // Check if all blanks are filled correctly
+    // Check if all blanks are filled correctly to determine overall completion
     useEffect(() => {
-        if (!content || !content.items || Object.keys(answers).length === 0) return;
+        if (isCompleted || !fib_content || Object.keys(validationResults).length === 0) return;
 
-        const blankSegments = textSegments.filter(segment => segment.type === 'blank').length;
-        const blankCount = blankSegments.length;
-
-        // If all blanks are filled
-        if (Object.keys(answers).length === blankCount) {
-            // Check if each answer matches the corresponding item's category
-            const isCorrect = blankSegments.every(segment => {
-                // Get index number from blank-0, blank-1, etc.
-                const blankIndex = parseInt(segment.id.split('-')[1]);
-                // Get the expected answer from the items array
-                const expectedAnswer = content.answers[blankIndex];
-                return answers[segment.id] === expectedAnswer;
-            });
-
-            if (isCorrect) {
-                setLocked(true);
-                onComplete?.();
+        // Get all blanks based on exercise type
+        const getAllBlanks = () => {
+            if (exerciseType === 'dragAndDrop') {
+                return textSegments.filter(segment => segment.type === 'blank');
+            } else if (exerciseType === 'multiBlankDragDrop') {
+                let allBlanks = [];
+                textSegments.forEach(question => {
+                    const blanks = question.segments.filter(segment => segment.type === 'blank');
+                    allBlanks = [...allBlanks, ...blanks];
+                });
+                return allBlanks;
             }
-        }
-    }, [answers, textSegments, content, onComplete]);
+            return [];
+        };
 
-    // Handle drag event end
+        const allBlanks = getAllBlanks();
+        const totalBlanks = allBlanks.length;
+
+        // Count correctly answered blanks
+        const correctBlanks = Object.values(validationResults).filter(result => result === true).length;
+
+        // If all blanks are answered correctly, complete the exercise
+        if (correctBlanks === totalBlanks && totalBlanks > 0) {
+            setIsCompleted(true);
+            setFeedback('All answers are correct! Well done!');
+            onComplete?.();
+        }
+    }, [validationResults, textSegments, exerciseType, fib_content, onComplete, isCompleted]);
+
+    // Handle drag event end - update answers when a keyword is dropped
     const handleDragEnd = (event) => {
         const { active, over } = event;
 
-        if (locked) return; // The exercise is completed, disable dragging
+        if (isCompleted) return; // Exercise is completed, disable dragging
 
         // If dragging is done AND it's over a valid droppable area
         if (over && active.data.current) {
-            // Take previous answers and add/replace with new one
-            setAnswers(prev => ({
-                ...prev,
-                [over.id]: active.data.current.keyword,
-            }));
+            const blankId = over.id;
+            const keyword = active.data.current.keyword;
+
+            // Only allow dropping if the blank hasn't been correctly answered yet
+            if (validationResults[blankId] !== true) {
+                // Update the answer
+                setAnswers(prev => ({
+                    ...prev,
+                    [blankId]: keyword,
+                }));
+
+                // Validate the answer immediately
+                validateAnswer(blankId, keyword);
+            }
+        }
+    };
+
+    // Validate a single answer
+    const validateAnswer = (blankId, answer) => {
+        // Find the correct answer for this blank
+        let correctAnswer = '';
+        let segment = null;
+
+        if (exerciseType === 'dragAndDrop') {
+            segment = textSegments.find(segment => segment.type === 'blank' && segment.id === blankId);
+            if (segment) {
+                correctAnswer = segment.correctAnswer;
+            }
+        } else if (exerciseType === 'multiBlankDragDrop') {
+            // Search in all questions
+            for (const question of textSegments) {
+                segment = question.segments.find(segment => segment.type === 'blank' && segment.id === blankId);
+                if (segment) {
+                    correctAnswer = segment.correctAnswer;
+                    break;
+                }
+            }
+        }
+
+        // Update validation result
+        const isCorrect = answer === correctAnswer;
+        setValidationResults(prev => ({
+            ...prev,
+            [blankId]: isCorrect
+        }));
+
+        if (!isCorrect) {
+            setFeedback(`Try again. "${answer}" doesn't match the expected answer for this blank.`);
+        } else {
+            setFeedback(`Correct! "${answer}" is right.`);
+        }
+
+        return isCorrect;
+    };
+
+    // Reset all answers
+    const resetAnswers = () => {
+        if (!isCompleted) {
+            setAnswers({});
+            setValidationResults({});
+            setFeedback('');
         }
     };
 
@@ -115,63 +155,64 @@ export const FillInTheBlank = ({ content, onComplete }) => {
         return newArray;
     };
 
-    /* Create the component. DnDContext will recursively add DnD-kit functionality to all components
-    * within it. DroppableText represents the drop zones for our DraggableKeywords. We map through all
-    * textSegments, stopping at every blank to add a DroppableText component. We add draggableKeywords
-    * to the side of the text. */
+    // Render the exercise based on its type
+    const renderExerciseContent = () => {
+        if (exerciseType === 'dragAndDrop') {
+            return (
+                <DragAndDropExercise
+                    textSegments={textSegments}
+                    answers={answers}
+                    keywords={keywords}
+                    validationResults={validationResults}
+                />
+            );
+        } else if (exerciseType === 'multiBlankDragDrop') {
+            return (
+                <MultiBlankExercise
+                    textSegments={textSegments}
+                    answers={answers}
+                    keywords={keywords}
+                    validationResults={validationResults}
+                />
+            );
+        } else {
+            // Fallback for unsupported exercise types
+            return (
+                <div className="bg-yellow-900 bg-opacity-20 p-4 rounded-md text-yellow-200 border border-yellow-700">
+                    <h3 className="font-bold mb-2">Unsupported Exercise Type</h3>
+                    <p>The exercise type "{exerciseType}" is not supported. Exercise ID: {fib_content.id || 'Unknown'}</p>
+                </div>
+            );
+        }
+    };
+
     return (
         <DndContext closestCenter={closestCenter} onDragEnd={handleDragEnd}>
-            {/* Create table to hold contents */}
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                {/* Text, left side */}
-                <div className='bg-opacity-20 bg-white rounded-lg p-6'>
-                    <h3 className="text-lg font-semibold mb-4 border-b border-gray-700 pb-2 text-white">
-                        Fill in the Blanks
-                    </h3>
-                    <div className="text-lg leading-relaxed text-white">
-                    {textSegments.map((segment, index) => {
-                            if (segment.type === 'text') {
-                                return (
-                                    <span key={`segment-${index}`}>
-                                        {segment.content}
-                                    </span>
-                                );
-                            } else {
-                                return (
-                                    <DroppableText
-                                        key={`segment-${index}`}
-                                        id={segment.id}
-                                        value={answers[segment.id]}
-                                    />
-                                );
-                            }
-                        })}
+            <div className="space-y-6">
+                {renderExerciseContent()}
+
+                {/* Feedback and control buttons */}
+                <div className="flex flex-col gap-4">
+                    {feedback && (
+                        <div className={`p-4 rounded-md ${feedback.includes("Correct!") || isCompleted
+                                ? 'bg-green-900 bg-opacity-20 text-green-200 border border-green-700'
+                                : 'bg-red-900 bg-opacity-20 text-red-200 border border-red-700'
+                            }`}>
+                            {feedback}
+                        </div>
+                    )}
+
+                    <div className="flex gap-4">
+                        {!isCompleted && (
+                            <button
+                                onClick={resetAnswers}
+                                className="px-4 py-2 bg-gray-600 text-white rounded-md 
+                                        hover:bg-gray-700 transition-colors"
+                            >
+                                Reset All
+                            </button>
+                        )}
                     </div>
-                </div>
-
-
-
-                {/* Keywords, right side */}
-                <div className='bg-opacity-20 bg-white rounded-lg p-6'>
-                    <h3 className='text-lg font-semibold mb-4 border-b border-gray-700 pb-2 text-white'>
-                        Answers
-                    </h3>
-                    <div className='flex gap-4 flex-wrap'>
-                        {/* Map through answers and create DroppableKeyword components */}
-                        {keywords.map((keyword, index) => (
-                            <DraggableKeyword keyword={keyword} id={`keyword-${index}`} key={index} />
-                        ))}
-                    </div>
-                </div>
-
-                <div className='col-span-full'>
-                    <SubmitButton
-                        answers={answers}
-                        textSegments={textSegments}
-                        content={content}
-                        setLocked={setLocked}
-                        onComplete={onComplete}
-                    />
                 </div>
             </div>
         </DndContext>

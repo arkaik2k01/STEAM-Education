@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Editor } from '@monaco-editor/react';
 
 export const MonPyEditor = ({
-    initialContent,
+    code_content,
     onComplete,
     codeEndpoint
 }) => {
@@ -16,10 +16,10 @@ export const MonPyEditor = ({
     const editorRef = useRef(null);
 
     useEffect(() => {
-        if (initialContent) {
-            setEditorContent(initialContent);
+        if (code_content) {
+            setEditorContent(code_content);
         }
-    }, [initialContent]);
+    }, [code_content]);
 
     const handleEditorMount = (editor) => {
         editorRef.current = editor;
@@ -70,8 +70,8 @@ export const MonPyEditor = ({
         setError(null);
         setResult(null);
 
-        if (initialContent && editorRef.current) {
-            editorRef.current.setValue(initialContent);
+        if (code_content && editorRef.current) {
+            editorRef.current.setValue(code_content);
         }
 
         setResetting(false);
@@ -129,7 +129,7 @@ export const MonPyEditor = ({
                 </div>
                 <button
                     onClick={handleReset}
-                    disabled={!initialContent || resetting}
+                    disabled={!code_content || resetting}
                     className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 
                     disabled:bg-gray-600 disabled:cursor-not-allowed"
                 >

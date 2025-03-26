@@ -66,25 +66,39 @@ const ModulePage = (props) => {
 
   // Render different exercise types
   const renderExercise = useCallback((exercise) => {
+    console.log(`Rendering exercise of type: ${exercise.type}`);
+
+    // Add validation to check if the exercise data is valid
+    if (!exercise) {
+      console.warn(`Invalid exercise data:`, exercise);
+      return (
+        <div className="bg-opacity-20 bg-yellow-800 rounded-lg p-6 text-white">
+          <h3 className="text-lg font-semibold mb-2">Exercise Data Error</h3>
+          <p>There was a problem loading this exercise.</p>
+        </div>
+      );
+    }
+
     switch (exercise.type) {
       case 'multipleChoice':
         return (
           <MCQuestion
-            questionData={exercise.item}
+            mcq_content={exercise}
             onComplete={() => handleSectionComplete(exercise.id)}
           />
         );
       case 'dragAndDrop':
+      case 'multiBlankDragDrop':
         return (
           <FillInTheBlank
-            content={exercise.item}
+            fib_content={exercise}
             onComplete={() => handleSectionComplete(exercise.id)}
           />
         );
-      case 'coding':
+      case 'codeExercise':
         return (
           <MonPyEditor
-            initialContent={exercise.item?.code}
+            code_content={exercise}
             codeEndpoint={compilerEndpoint}
             onComplete={() => handleSectionComplete(exercise.id)}
           />
@@ -103,11 +117,11 @@ const ModulePage = (props) => {
     return (
       <div className="bg-opacity-10 bg-white rounded-lg p-6 mb-6">
         <h2 className="text-xl font-semibold text-white mb-4">Pre-Assessment</h2>
-        {moduleData.preAssessment.questions.map((question, index) => {          
+        {moduleData.preAssessment.questions.map((question, index) => {
           return (
             <div key={`preassess-${index}`} className="mb-6">
-              <MCQuestion 
-                questionData={question} 
+              <MCQuestion
+                mcq_content={question}
                 onComplete={() => handleSectionComplete(`preassess-${index}`)}
               />
             </div>
@@ -189,12 +203,12 @@ const ModulePage = (props) => {
     <div className="min-h-screen" style={{ backgroundColor: '#201E1E' }}>
       {/* Header with module title */}
       <PageHeader title={moduleData.title || "Module"} userRole="student" />
-      
+
       {/* Progress bar */}
       <div className="w-full bg-gray-700 h-2">
-        <div 
-          className="h-full transition-all duration-300" 
-          style={{ 
+        <div
+          className="h-full transition-all duration-300"
+          style={{
             width: `${calculateProgress()}%`,
             backgroundColor: '#0A3C91'
           }}
@@ -208,7 +222,7 @@ const ModulePage = (props) => {
           <div className="max-h-[calc(100vh-8rem)] overflow-y-auto pr-4 space-y-4">
             {/* Pre-assessment section */}
             {moduleData.preAssessment && renderPreAssessment()}
-            
+
             {/* Module sections */}
             {moduleData.sections.map((section) => (
               <div key={section.id} className="relative">
@@ -217,7 +231,7 @@ const ModulePage = (props) => {
                   <h2 className="text-xl font-semibold text-white mb-4">{section.title}</h2>
                   <div className="text-white">{section.content}</div>
                 </div>
-                
+
                 {/* Section exercises */}
                 {section.exercises && section.exercises.length > 0 && (
                   <div className="space-y-6">
