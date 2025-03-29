@@ -3,9 +3,8 @@
 const IaC_ENDPOINT = 'IAC_ENDPOINT HERE'
 
 /* 
-* This POST request will send a message to IaC in order to create the simulation
-* and compiler in the back end. This will return the endpoints for the simulation and compiler unique
-* to the user ID.
+* This function triggers the creation of the back end apps for the module, being the Gazebo image,
+* the compiler for the code, as well as the interactive terminal if needed for the module.
 */
 
 export const requestModuleSimulation = async (moduleId, userId) => {
@@ -27,13 +26,11 @@ export const requestModuleSimulation = async (moduleId, userId) => {
       throw new Error(`Failed to request infrastructure: ${response.status}`);
     }
 
-    // Parse the response to get the endpoints
+    // Parse the success message from the back end
     const data = await response.json();
     
-    return {
-      simulationEndpoint: data.simulationEndpoint,
-      compilerEndpoint: data.compilerEndpoint
-    };
+    console.log('Simulation and Compiler request successful:', data);
+    return;
   } catch (error) {
     console.error('Simulation and Compiler request failed:', error);
     throw error;

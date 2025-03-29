@@ -1,5 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { Editor } from '@monaco-editor/react';
+import { auth } from '../../../firebase/services/auth';
+import { TeleopControls } from './TeleopControls';
+import { useParams } from 'react-router-dom';
 
 export const MonPyEditor = ({
     code_content,
@@ -9,6 +12,9 @@ export const MonPyEditor = ({
     // General states
     const [editorContent, setEditorContent] = useState('# Loading module . . .');
     const [terminalType, setTerminalType] = useState('gen_terminal'); // Default terminal type
+    const [showTeleopControls, setShowTeleopControls] = useState(false); // Add missing state
+    const [editorHeight, setEditorHeight] = useState('300px'); // Control editor height
+    const editorContainerRef = useRef(null);
 
     // Websocket connection
     const [socket, setSocket] = useState(null);
@@ -21,6 +27,12 @@ export const MonPyEditor = ({
     const [result, setResult] = useState(null);
     const editorRef = useRef(null);
 
+    // Get user info for simulation/command connection
+    const userID = auth.currentUser ? auth.currentUser.uid : 'no-id-user';
+    const questionID = code_content?.id || 'invalid-id';
+    const params = useParams();
+    const moduleID = params ? params.moduleId : null;
+
     // Initial setup
     useEffect(() => {
         if (code_content) {
@@ -32,14 +44,52 @@ export const MonPyEditor = ({
         }
     }, [code_content]);
 
+    // Calculate editor height based on container
+    useLayoutEffect(() => {
+        if (!editorContainerRef.current) return;
+
+        // Use ResizeObserver to handle container size changes
+        const resizeObserver = new ResizeObserver((entries) => {
+            // Use requestAnimationFrame to avoid ResizeObserver loop errors
+            window.requestAnimationFrame(() => {
+                if (!entries.length) return;
+
+                const containerHeight = entries[0].contentRect.height;
+                // Set height slightly smaller than container to avoid overflow
+                setEditorHeight(`${Math.max(200, containerHeight - 80)}px`);
+            });
+        });
+
+        resizeObserver.observe(editorContainerRef.current);
+
+        return () => {
+            resizeObserver.disconnect();
+        };
+    }, []);
+
     // Web socket setup
     useEffect(() => {
         if (!codeEndpoint) return;
 
         try {
-            let user_ws = codeEndpoint + '/user/' + userID + '/command';
-            const ws = new WebSocket(user_ws);
+            // GATEWAY_IP: ws://35.209.212.254/{userID}/{moduleID}/command
+            let user_ws = `ws://35.209.212.254/user/${userID}/${moduleID}/command`;
             console.log('Connecting to websocket:', user_ws);
+            const ws = new WebSocket(user_ws);
+
+            // Set up message handler to receive responses
+            ws.onmessage = (event) => {
+                console.log('Received response:', event.data);
+                try {
+                    const response = JSON.parse(event.data);
+                    setResult(response);
+                    setSubmitting(false);
+                } catch (err) {
+                    console.error('Error parsing response:', err);
+                    setError(new Error('Received invalid response from server'));
+                    setSubmitting(false);
+                }
+            };
 
             // Open connection to websocket
             ws.onopen = () => {
@@ -74,10 +124,15 @@ export const MonPyEditor = ({
             console.error('Error setting up WebSocket:', err);
             setError(new Error('Failed to establish connection'));
         }
-    }, [codeEndpoint, onComplete]);
+    }, [codeEndpoint, userID, moduleID, questionID, terminalType]);
 
     const handleEditorMount = (editor) => {
         editorRef.current = editor;
+
+        // Delay layout operations to avoid ResizeObserver loop errors
+        setTimeout(() => {
+            editor.layout();
+        }, 100);
     }
 
     // Submit code to server
@@ -94,7 +149,7 @@ export const MonPyEditor = ({
             const code = editorRef.current.getValue();
 
             const payload = {
-                question_id: code_content?.id || 'unknown',
+                question_id: questionID,
                 term_type: terminalType,
                 python_script: code,
                 interactive_input: null // Default value, used for keystrokes in interactive mode
@@ -102,6 +157,10 @@ export const MonPyEditor = ({
 
             console.log('Sending code to server:', payload);
             socket.send(JSON.stringify(payload));
+            // Now that we have established a connection, we can show the teleop controls
+            if (terminalType === 'interactive_terminal') {
+                setShowTeleopControls(true);
+            }
         } catch (err) {
             setError(err);
             console.error('Error submitting code:', err);
@@ -144,16 +203,19 @@ export const MonPyEditor = ({
         setResetting(false);
     }
 
-
     return (
-        <div className='flex flex-col h-[500px] bg-opacity-20 bg-gray-800 rounded-lg overflow-hidden'>
+        <div
+            ref={editorContainerRef}
+            className='flex flex-col bg-opacity-20 bg-gray-800 rounded-lg overflow-hidden'
+            style={{ height: '100%', maxHeight: '500px' }}
+        >
             {/* Connection status indicator */}
             <div className={`px-4 py-2 text-sm ${connected ? 'bg-green-900 bg-opacity-30 text-green-200' : 'bg-red-900 bg-opacity-30 text-red-200'}`}>
                 {connected ? 'Connected to server' : 'Disconnected from server'}
             </div>
-            
+
             {/* Editor component */}
-            <div className='flex-grow'>
+            <div className='flex-grow' style={{ height: editorHeight, minHeight: '200px' }}>
                 <Editor
                     height="100%"
                     defaultLanguage="python"
@@ -202,7 +264,7 @@ export const MonPyEditor = ({
                         </span>
                     )}
                 </div>
-                
+
                 {/* Action buttons */}
                 <div className="flex items-center justify-between p-4">
                     <button
@@ -213,7 +275,7 @@ export const MonPyEditor = ({
                     >
                         {resetting ? 'Resetting...' : 'Reset Code'}
                     </button>
-                    
+
                     <button
                         onClick={handleSubmit}
                         disabled={!connected || submitting}
@@ -224,45 +286,12 @@ export const MonPyEditor = ({
                     </button>
                 </div>
 
-                {/* Interactive terminal controls - only shown for interactive terminals */}
-                {terminalType === 'interactive_terminal' && (
-                    <div className="flex items-center justify-center p-4 border-t border-gray-700">
-                        <div className="grid grid-cols-3 gap-2">
-                            {/* Up arrow */}
-                            <button
-                                onClick={() => sendKeystroke('\x1B[A')}
-                                className="col-start-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                                aria-label="Up"
-                            >
-                                ↑
-                            </button>
-                            
-                            {/* Left arrow */}
-                            <button 
-                                onClick={() => sendKeystroke('\x1B[D')}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                                aria-label="Left"
-                            >
-                                ←
-                            </button>
-                            {/* Down arrow */}
-                            <button
-                                onClick={() => sendKeystroke('\x1B[B')}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                                aria-label="Down"
-                            >
-                                ↓
-                            </button>
-                            {/* Right arrow */}
-                            <button
-                                onClick={() => sendKeystroke('\x1B[C')}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                                aria-label="Right"
-                            >
-                                →
-                            </button>
-                        </div>
-                    </div>
+                {/* Interactive terminal controls - only shown for interactive terminals after successful code submission */}
+                {terminalType === 'interactive_terminal' && showTeleopControls && (
+                    <TeleopControls
+                        sendKeystroke={sendKeystroke}
+                        disabled={!connected || submitting}
+                    />
                 )}
             </div>
         </div>

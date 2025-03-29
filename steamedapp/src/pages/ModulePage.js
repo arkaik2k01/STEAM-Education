@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchModuleById } from '../firebase/services/moduleServer';
 import { MCQuestion } from '../components/ModulePage/MCQuestion/MCQuestion';
-import { MonPyEditor } from '../components/ModulePage/MonPyEditor';
+import { MonPyEditor } from '../components/ModulePage/PyCodeEditor/MonPyEditor';
 import { FillInTheBlank } from '../components/ModulePage/FillInTheBlank/FillInTheBlank';
 import { GzWebFrame } from '../components/ModulePage/GzWebFrame';
+import SimpleMarkdown from '../components/SimpleMarkdown';
 import { requestModuleSimulation } from '../firebase/services/infrastructureService';
 import PageHeader from '../components/PageHeader';
 import { auth } from '../firebase/services/auth';
@@ -12,6 +13,8 @@ import { auth } from '../firebase/services/auth';
 const ModulePage = (props) => {
   const params = useParams();
   const moduleId = props.moduleId || (params ? params.moduleId : null);
+  const contentContainerRef = useRef(null);
+  const simulationContainerRef = useRef(null);
 
   const [moduleData, setModuleData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -19,6 +22,7 @@ const ModulePage = (props) => {
   const [progress, setProgress] = useState({});
   const [simulationEndpoint, setSimulationEndpoint] = useState(null);
   const [compilerEndpoint, setCompilerEndpoint] = useState(null);
+  const [contentHeight, setContentHeight] = useState("calc(100vh - 8rem)");
 
   // Fetch module data when component mounts
   useEffect(() => {
@@ -54,6 +58,36 @@ const ModulePage = (props) => {
       loadModule();
     }
   }, [moduleId]);
+
+  // Manage content and simulation container sizes
+  useEffect(() => {
+    const calculateHeights = () => {
+      // Use a timeout to avoid ResizeObserver loops
+      setTimeout(() => {
+        // Calculate available viewport height
+        const viewportHeight = window.innerHeight;
+        const headerHeight = 64; // Approx header height
+        const progressBarHeight = 2; // Progress bar height
+        const padding = 32; // Total vertical padding
+
+        // Calculate available height
+        const availableHeight = viewportHeight - headerHeight - progressBarHeight - padding;
+
+        // Set content height
+        setContentHeight(`${availableHeight}px`);
+      }, 0);
+    };
+
+    // Calculate on initial load
+    calculateHeights();
+
+    // Recalculate on window resize
+    window.addEventListener('resize', calculateHeights);
+
+    return () => {
+      window.removeEventListener('resize', calculateHeights);
+    };
+  }, []);
 
   // Update progress when a section is completed
   const handleSectionComplete = useCallback((sectionId) => {
@@ -95,13 +129,15 @@ const ModulePage = (props) => {
             onComplete={() => handleSectionComplete(exercise.id)}
           />
         );
-      case 'codeExercise':
+      case 'coding':
         return (
-          <MonPyEditor
-            code_content={exercise}
-            codeEndpoint={compilerEndpoint}
-            onComplete={() => handleSectionComplete(exercise.id)}
-          />
+          <div className="exercise-container" style={{ height: '500px' }}>
+            <MonPyEditor
+              code_content={exercise}
+              codeEndpoint={compilerEndpoint}
+              onComplete={() => handleSectionComplete(exercise.id)}
+            />
+          </div>
         );
       default:
         return <p className="text-gray-400">Unsupported exercise type: {exercise.type}</p>;
@@ -219,7 +255,11 @@ const ModulePage = (props) => {
       <div className="container mx-auto p-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left side: Scrollable educational content */}
-          <div className="max-h-[calc(100vh-8rem)] overflow-y-auto pr-4 space-y-4">
+          <div
+            ref={contentContainerRef}
+            className="overflow-y-auto pr-4 space-y-4"
+            style={{ height: contentHeight }}
+          >
             {/* Pre-assessment section */}
             {moduleData.preAssessment && renderPreAssessment()}
 
@@ -228,8 +268,15 @@ const ModulePage = (props) => {
               <div key={section.id} className="relative">
                 {/* Section content */}
                 <div className="prose prose-invert max-w-none bg-opacity-10 bg-white rounded-lg p-6 mb-6">
-                  <h2 className="text-xl font-semibold text-white mb-4">{section.title}</h2>
-                  <div className="text-white">{section.content}</div>
+                  <div className="text-xl font-semibold text-white mb-4">
+                    <SimpleMarkdown content={section.title} />
+                  </div>
+
+                  {section.content && (<SimpleMarkdown
+                    content={section.content}
+                    className="text-white"
+                  />
+                  )}
                 </div>
 
                 {/* Section exercises */}
@@ -237,10 +284,17 @@ const ModulePage = (props) => {
                   <div className="space-y-6">
                     {section.exercises.map((exercise) => (
                       <div key={exercise.id} className="bg-opacity-10 bg-white rounded-lg p-6">
-                        <h3 className="text-lg font-semibold text-white mb-2">{exercise.title}</h3>
+                        <div className="text-lg font-semibold text-white mb-2">
+                          <SimpleMarkdown content={exercise.title} />
+                        </div>
+
                         {exercise.description && (
-                          <p className="text-gray-300 mb-4">{exercise.description}</p>
+                          <SimpleMarkdown
+                            content={exercise.description}
+                            className="text-gray-300 mb-4"
+                          />
                         )}
+
                         {renderExercise(exercise)}
                       </div>
                     ))}
@@ -251,7 +305,12 @@ const ModulePage = (props) => {
           </div>
 
           {/* Right side: Fixed GzWebFrame */}
-          <div className="bg-opacity-10 bg-white rounded-lg overflow-hidden sticky top-24 h-[calc(100vh-8rem)]">
+          <div
+            ref={simulationContainerRef}
+            className="bg-opacity-10 bg-white rounded-lg overflow-hidden sticky top-24"
+            style={{ height: contentHeight }}
+          >
+            {/* The position sticky will keep this fixed while scrolling */}
             <GzWebFrame endpoint={simulationEndpoint} />
           </div>
         </div>
