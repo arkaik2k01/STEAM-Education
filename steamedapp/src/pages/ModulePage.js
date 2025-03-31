@@ -9,6 +9,7 @@ import MarkdownText from '../components/MarkdownText';
 import { deployModuleInfrastructure, destroyModuleInfrastructure } from '../firebase/services/infrastructureService';
 import PageHeader from '../components/PageHeader';
 import { auth } from '../firebase/services/auth';
+import { requiresInfrastructure } from '../utils/moduleInfoFile';
 
 const ModulePage = (props) => {
   const navigate = useNavigate();
@@ -26,11 +27,50 @@ const ModulePage = (props) => {
   const [progress, setProgress] = useState({});
   const [contentHeight, setContentHeight] = useState("calc(100vh - 8rem)");
   const [infrastructureDeployed, setInfrastructureDeployed] = useState(false);
+  
+  // Check if this module needs infrastructure
+  const needsInfrastructure = moduleId ? requiresInfrastructure(moduleId) : false;
 
-  // Deploy infrastructure when component mounts
+  // Fetch module data when component mounts
+  useEffect(() => {
+    const loadModule = async () => {
+      try {
+        setLoading(true);
+        console.log(`Fetching module with Firestore ID: ${moduleId}`);
+
+        const module = await fetchModuleById(moduleId);
+        setModuleData(module);
+        
+        // Log whether this module requires infrastructure
+        console.log(`Module ${moduleId} requires infrastructure: ${needsInfrastructure}`);
+        
+      } catch (err) {
+        console.error('Failed to fetch module:', err);
+        setError('Failed to load module content. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (moduleId) {
+      loadModule();
+    }
+  }, [moduleId, needsInfrastructure]);
+
+  // Deploy infrastructure when component mounts - skip for modules that don't need it
   useEffect(() => {
     const deployInfrastructure = async () => {
-      if (!moduleId) return;
+      // Don't deploy if module data is still loading or module ID is missing
+      if (!moduleId || loading || !moduleData) {
+        console.log('Skipping infrastructure deployment - data not ready');
+        return;
+      }
+      
+      // Skip deployment if this module doesn't need infrastructure
+      if (!needsInfrastructure) {
+        console.log(`Module ${moduleId} does not require infrastructure - skipping deployment`);
+        return;
+      }
       
       const userId = auth.currentUser ? auth.currentUser.uid : null;
       if (!userId) {
@@ -39,35 +79,45 @@ const ModulePage = (props) => {
         return;
       }
 
-      try {
-        await deployModuleInfrastructure(moduleId, userId);
-        setInfrastructureDeployed(true);
-      } catch (err) {
-        console.error('Failed to deploy infrastructure:', err);
-        setError('Failed to connect to simulation. Please refresh the page. If the problem persists, contact an administrator.');
+      // Only deploy if not already deployed
+      if (!infrastructureDeployed) {
+        try {
+          console.log('Deploying infrastructure for module:', moduleId);
+          await deployModuleInfrastructure(moduleId, userId);
+          setInfrastructureDeployed(true);
+        } catch (err) {
+          console.error('Failed to deploy infrastructure:', err);
+          setError('Failed to connect to simulation. Please refresh the page. If the problem persists, contact an administrator.');
+        }
       }
     };
 
     deployInfrastructure();
 
-    // Destroy infrastructure when component unmounts
+    // Destroy infrastructure when component unmounts - skip for modules that don't need it
     return () => {
       const destroyInfrastructure = async () => {
+        // Only destroy if we actually deployed infrastructure
         const userId = auth.currentUser ? auth.currentUser.uid : null;
-        if (userId && infrastructureDeployed) {
+        if (userId && infrastructureDeployed && needsInfrastructure) {
+          console.log('Destroying infrastructure for module:', moduleId);
           await destroyModuleInfrastructure(userId);
         }
       };
 
       destroyInfrastructure();
     };
-  }, [moduleId, infrastructureDeployed]);
+  }, [moduleId, infrastructureDeployed, loading, moduleData, needsInfrastructure]);
 
-  // Add a beforeunload event handler to destroy infrastructure on page refresh/close
+  // Add a beforeunload event handler to destroy infrastructure on page refresh/close 
   useEffect(() => {
     const handleBeforeUnload = () => {
+      // Skip if infrastructure wasn't deployed or module doesn't need it
+      if (!moduleData || !infrastructureDeployed || !needsInfrastructure) return;
+      
       const userId = auth.currentUser ? auth.currentUser.uid : null;
-      if (userId && infrastructureDeployed) {
+      if (userId) {
+        console.log('Sending beacon to destroy infrastructure for module:', moduleId);
         // Using navigator.sendBeacon for best chance of completing before page unloads
         navigator.sendBeacon(
           'https://steam-iac-pulumi-function-104577670307.us-central1.run.app/destroy',
@@ -81,29 +131,7 @@ const ModulePage = (props) => {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [infrastructureDeployed]);
-
-  // Fetch module data when component mounts
-  useEffect(() => {
-    const loadModule = async () => {
-      try {
-        setLoading(true);
-        console.log(`Fetching module with Firestore ID: ${moduleId}`);
-
-        const module = await fetchModuleById(moduleId);
-        setModuleData(module);
-      } catch (err) {
-        console.error('Failed to fetch module:', err);
-        setError('Failed to load module content. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (moduleId) {
-      loadModule();
-    }
-  }, [moduleId]);
+  }, [infrastructureDeployed, moduleData, moduleId, needsInfrastructure]);
 
   // Manage content and simulation container sizes
   useEffect(() => {
@@ -377,8 +405,8 @@ const ModulePage = (props) => {
             className="bg-opacity-10 bg-white rounded-lg overflow-hidden sticky top-24"
             style={{ height: contentHeight }}
           >
-            {/* The position sticky will keep this fixed while scrolling */}
-            <GzWebFrame />
+            {/* Pass whether this module requires infrastructure to GzWebFrame */}
+            <GzWebFrame requiresInfrastructure={needsInfrastructure} />
           </div>
         </div>
       </div>

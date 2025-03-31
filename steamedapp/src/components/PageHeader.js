@@ -4,8 +4,9 @@ import { authService } from '../firebase/services/auth';
 import { destroyModuleInfrastructure } from '../firebase/services/infrastructureService';
 import { auth } from '../firebase/services/auth';
 import MarkdownText from './MarkdownText';
+import { requiresInfrastructure } from '../utils/moduleInfoFile';
 
-/**
+/*
  * Page Header Component
  */
 const PageHeader = ({ 
@@ -16,17 +17,22 @@ const PageHeader = ({
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
+  // Determine if current module requires infrastructure
+  const needsInfrastructure = currentModuleId ? requiresInfrastructure(currentModuleId) : false;
+
   const handleLogout = async () => {
     try {
       setLoading(true);
       
-      // If on a module page, destroy infrastructure first
-      // NOTE: This might be redundant and cause some issues in the back end, delete this first if we run into issues
-      if (currentModuleId) {
+      // If on a module page that requires infrastructure, destroy it first
+      if (currentModuleId && needsInfrastructure) {
+        console.log('PageHeader: Destroying infrastructure during logout for module:', currentModuleId);
         const userId = auth.currentUser ? auth.currentUser.uid : null;
         if (userId) {
           await destroyModuleInfrastructure(userId);
         }
+      } else if (currentModuleId) {
+        console.log('PageHeader: Module doesn\'t require infrastructure - skipping destruction during logout');
       }
       
       await authService.logout();
@@ -41,13 +47,15 @@ const PageHeader = ({
 
   const handleHome = async () => {
     try {
-      // If on a module page, destroy infrastructure before navigating
-      // NOTE: This might be redundant and cause some issues in the back end, delete this first if we run into issues
-      if (currentModuleId) {
+      // If on a module page that requires infrastructure, destroy it before navigating
+      if (currentModuleId && needsInfrastructure) {
+        console.log('PageHeader: Destroying infrastructure during navigation home for module:', currentModuleId);
         const userId = auth.currentUser ? auth.currentUser.uid : null;
         if (userId) {
           await destroyModuleInfrastructure(userId);
         }
+      } else if (currentModuleId) {
+        console.log('PageHeader: Module doesn\'t require infrastructure - skipping destruction during navigation');
       }
       
       // Redirect based on user role
