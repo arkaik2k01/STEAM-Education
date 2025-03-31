@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { testData, fetchMCQuestion } from "../../../utils/fetchMCQuestion";
 import { MCAnswers } from "./MCAnswers";
+import MarkdownText from "../../MarkdownText";
 
 // Endpoint URL is assigned on the module page
 export const MCQuestion = ({ mcq_content, onComplete }) => {
   const [feedback, setFeedback] = useState({}); // Tracks feedback for each answer
   const hasCompletedRef = useRef(false); // Track if onComplete has been called, prevents infinite loop
-
 
   // Fetch question and answer
   useEffect(() => {
@@ -23,8 +22,12 @@ export const MCQuestion = ({ mcq_content, onComplete }) => {
   return (
     <div className='w-full max-w-2xl mx-auto'>
       <h2 className='text-xl font-semibold text-white mb-6'>
-        {/* Display question */}
-        {mcq_content.question}
+        {/* Display question with markdown support */}
+        <MarkdownText 
+          content={mcq_content.question} 
+          size="text-xl"
+          color="text-white"
+        />
       </h2>
       {/* Display and build answer component */}
       <MCAnswers 

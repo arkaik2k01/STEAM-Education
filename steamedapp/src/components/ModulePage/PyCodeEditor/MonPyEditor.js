@@ -73,7 +73,7 @@ export const MonPyEditor = ({
 
         try {
             // GATEWAY_IP: ws://35.209.212.254/{userID}/{moduleID}/command
-            let user_ws = `ws://35.209.212.254/user/${userID}/${moduleID}/command`;
+            let user_ws = `ws://35.209.212.254/${userID}/${moduleID}/command`;
             console.log('Connecting to websocket:', user_ws);
             const ws = new WebSocket(user_ws);
 

@@ -5,7 +5,7 @@ import { MCQuestion } from '../components/ModulePage/MCQuestion/MCQuestion';
 import { MonPyEditor } from '../components/ModulePage/PyCodeEditor/MonPyEditor';
 import { FillInTheBlank } from '../components/ModulePage/FillInTheBlank/FillInTheBlank';
 import { GzWebFrame } from '../components/ModulePage/GzWebFrame';
-import SimpleMarkdown from '../components/SimpleMarkdown';
+import MarkdownText from '../components/MarkdownText';
 import { requestModuleSimulation } from '../firebase/services/infrastructureService';
 import PageHeader from '../components/PageHeader';
 import { auth } from '../firebase/services/auth';
@@ -269,13 +269,18 @@ const ModulePage = (props) => {
                 {/* Section content */}
                 <div className="prose prose-invert max-w-none bg-opacity-10 bg-white rounded-lg p-6 mb-6">
                   <div className="text-xl font-semibold text-white mb-4">
-                    <SimpleMarkdown content={section.title} />
+                    <MarkdownText 
+                      content={section.title}
+                      size="text-xl"
+                      color="text-white"
+                    />
                   </div>
 
-                  {section.content && (<SimpleMarkdown
-                    content={section.content}
-                    className="text-white"
-                  />
+                  {section.content && (
+                    <MarkdownText
+                      content={section.content}
+                      color="text-white"
+                    />
                   )}
                 </div>
 
@@ -285,13 +290,18 @@ const ModulePage = (props) => {
                     {section.exercises.map((exercise) => (
                       <div key={exercise.id} className="bg-opacity-10 bg-white rounded-lg p-6">
                         <div className="text-lg font-semibold text-white mb-2">
-                          <SimpleMarkdown content={exercise.title} />
+                          <MarkdownText 
+                            content={exercise.title}
+                            size="text-lg"
+                            color="text-white"
+                          />
                         </div>
 
                         {exercise.description && (
-                          <SimpleMarkdown
+                          <MarkdownText
                             content={exercise.description}
-                            className="text-gray-300 mb-4"
+                            color="text-gray-300"
+                            className="mb-4"
                           />
                         )}
 

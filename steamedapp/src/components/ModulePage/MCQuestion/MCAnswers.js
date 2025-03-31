@@ -1,4 +1,5 @@
 import React from 'react';
+import MarkdownText from '../../MarkdownText';
 
 export const MCAnswers = ({ options, correctAnswer, feedback, setFeedback }) => {
   // Check if the answer is correct
@@ -46,7 +47,14 @@ export const MCAnswers = ({ options, correctAnswer, feedback, setFeedback }) => 
               ${getButtonStyles(index)} border`}
             disabled={feedback[index] || Object.values(feedback).some(f => f.isCorrect)}
           >
-            {option}
+            <MarkdownText 
+              content={option}
+              color={
+                !feedback[index] 
+                  ? (Object.values(feedback).some(f => f.isCorrect) ? 'text-gray-400' : 'text-white')
+                  : (feedback[index].isCorrect ? 'text-green-200' : 'text-red-200')
+              }
+            />
           </button>
           {feedback[index] && (
             <span className={`font-medium ${feedback[index].isCorrect

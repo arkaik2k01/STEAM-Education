@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import MarkdownText from './MarkdownText';
 
 const TeacherDashboard = ({ teacherClasses, onStudentDelete, onClassCreate, onClassRename }) => {
   // UI state management
@@ -157,7 +158,12 @@ const TeacherDashboard = ({ teacherClasses, onStudentDelete, onClassCreate, onCl
                           <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 text-white transition-transform duration-200 ${expandedClasses[classItem.id] ? 'rotate-90' : ''}`} viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                           </svg>
-                          <h3 className="text-lg font-medium text-white">{classItem.name}</h3>
+                          <h3 className="text-lg font-medium text-white">
+                            <MarkdownText 
+                              content={classItem.name}
+                              size="text-lg"
+                            />
+                          </h3>
                         </div>
                         
                         <div className="flex items-center gap-2">
@@ -224,7 +230,10 @@ const TeacherDashboard = ({ teacherClasses, onStudentDelete, onClassCreate, onCl
                                   <div className="w-6 h-6 rounded-full bg-opacity-20 bg-blue-500 flex items-center justify-center">
                                     <span className="text-white text-xs">{calculateProgress(student)}%</span>
                                   </div>
-                                  <span className="text-white">{student.name}</span>
+                                  <MarkdownText 
+                                    content={student.name} 
+                                    color="text-white"
+                                  />
                                 </div>
                                 
                                 <div className="flex items-center gap-3">
@@ -285,7 +294,7 @@ const TeacherDashboard = ({ teacherClasses, onStudentDelete, onClassCreate, onCl
                 {/* Feedback message */}
                 {copyFeedback && (
                   <div className="mt-2 p-2 bg-green-900 bg-opacity-20 text-green-200 border border-green-500 rounded text-center animate-fade-in-out">
-                    {copyFeedback}
+                    <MarkdownText content={copyFeedback} color="text-green-200" />
                   </div>
                 )}
               </div>
@@ -298,7 +307,7 @@ const TeacherDashboard = ({ teacherClasses, onStudentDelete, onClassCreate, onCl
               {selectedStudent ? (
                 <>
                   <h2 className="text-xl font-semibold text-white mb-2">
-                    {selectedStudent.name}
+                    <MarkdownText content={selectedStudent.name} size="text-xl" />
                   </h2>
                   
                   <div className="flex items-center justify-between mb-4">
@@ -345,7 +354,10 @@ const TeacherDashboard = ({ teacherClasses, onStudentDelete, onClassCreate, onCl
                                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 10-1.414-1.414L11 10.586V7z" clipRule="evenodd" />
                                   </svg>
                                 )}
-                                <span className="text-white">{module.title}</span>
+                                <MarkdownText 
+                                  content={module.title}
+                                  color="text-white"
+                                />
                               </div>
                               <span className={module.isCompleted ? 'text-green-400' : 'text-gray-400'}>
                                 {module.isCompleted ? 'Completed' : 'In progress'}

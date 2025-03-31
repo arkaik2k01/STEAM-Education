@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import MarkdownText from './MarkdownText';
 
 const StudentDashboard = ({ studentModules, onModuleSelect }) => {
   const [selectedModule, setSelectedModule] = useState(null);
@@ -54,7 +55,12 @@ const StudentDashboard = ({ studentModules, onModuleSelect }) => {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="text-lg font-medium text-white">{module.title}</h3>
+                          <h3 className="text-lg font-medium text-white">
+                            <MarkdownText 
+                              content={module.title}
+                              size="text-lg"
+                            />
+                          </h3>
                           <p className="text-gray-300 text-sm mt-1">
                             {progress === 100 ? 'Completed' : `${progress}% Complete`}
                           </p>
@@ -99,7 +105,10 @@ const StudentDashboard = ({ studentModules, onModuleSelect }) => {
               {selectedModule ? (
                 <>
                   <h2 className="text-xl font-semibold text-white mb-2">
-                    {selectedModule.title}
+                    <MarkdownText 
+                      content={selectedModule.title}
+                      size="text-xl"
+                    />
                   </h2>
                   
                   <div className="flex items-center justify-between mb-4">
@@ -127,9 +136,12 @@ const StudentDashboard = ({ studentModules, onModuleSelect }) => {
                   </div>
                   
                   <div className="prose prose-invert max-w-none">
-                    <p className="text-white">
-                      {selectedModule.description || 'No description available.'}
-                    </p>
+                    {selectedModule.description && (
+                      <MarkdownText 
+                        content={selectedModule.description} 
+                        color="text-white"
+                      />
+                    )}
                     
                     {selectedModule.sections && selectedModule.sections.length > 0 && (
                       <div className="mt-6">
@@ -149,7 +161,12 @@ const StudentDashboard = ({ studentModules, onModuleSelect }) => {
                                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 10-1.414-1.414L11 10.586V7z" clipRule="evenodd" />
                                 </svg>
                               )}
-                              <span>{section.title || `Section ${index + 1}`}</span>
+                              <span>
+                                <MarkdownText 
+                                  content={section.title || `Section ${index + 1}`}
+                                  color="text-gray-300"
+                                />
+                              </span>
                             </li>
                           ))}
                         </ul>

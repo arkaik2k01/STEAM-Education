@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../firebase/services/auth';
+import MarkdownText from './MarkdownText';
 
 /**
  * Page Header Component
- * @param {Object} props - Component props
- * @param {string} props.title - Page title to display
- * @param {string} props.userRole - User role (teacher/student)
  */
 const PageHeader = ({ 
   title = "STEAM Education Platform", 
@@ -43,8 +41,15 @@ const PageHeader = ({
     <header className="w-full p-4 sticky top-0 z-10" style={{ backgroundColor: '#828282' }}>
       <div className="container mx-auto">
         <div className="flex justify-between items-center">
-          {/* Page Title */}
-          <h1 className="text-2xl font-bold text-white">{title}</h1>
+          {/* Page Title with MarkdownText support */}
+          <h1 className="text-2xl font-bold text-white">
+            <MarkdownText 
+              content={title}
+              size="text-2xl"
+              color="text-white"
+              preserveHeadings={true}
+            />
+          </h1>
 
           {/* Navigation buttons */}
           <div className="flex items-center space-x-4">
