@@ -53,14 +53,59 @@ const TeacherDashboard = ({ teacherClasses, onStudentDelete, onClassCreate, onCl
 
   // Calculate progress for a student
   const calculateProgress = (student) => {
-    if (!student.progress) return 0;
+    if (!student.progress?.modules) return 0;
     
-    // Count completed modules
-    const totalModules = student.progress.length;
-    const completedModules = student.progress.filter(module => 
-      module.isCompleted).length;
+    // Calculate overall progress across all modules
+    let totalProgress = 0;
+    let moduleCount = 0;
     
-    return totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0;
+    Object.values(student.progress.modules).forEach(moduleProgress => {
+      if (moduleProgress.progress !== undefined) {
+        totalProgress += moduleProgress.progress;
+        moduleCount++;
+      }
+    });
+    
+    return moduleCount > 0 ? Math.round(totalProgress / moduleCount) : 0;
+  };
+
+  // Get module progress details for a student
+  const getModuleProgress = (student) => {
+    if (!student.progress?.modules) return [];
+    
+    // Create a map to deduplicate modules by title
+    const moduleMap = new Map();
+    
+    Object.entries(student.progress.modules).forEach(([moduleId, moduleProgress]) => {
+      const moduleName = student.moduleNames?.[moduleId] || moduleId;
+      
+      // If we already have this module, merge the progress
+      if (moduleMap.has(moduleName)) {
+        const existing = moduleMap.get(moduleName);
+        moduleMap.set(moduleName, {
+          ...existing,
+          progress: Math.max(existing.progress, moduleProgress.progress || 0),
+          completedLessons: [...new Set([...existing.completedLessons, ...(moduleProgress.completedLessons || [])])],
+          completedExercises: { ...existing.completedExercises, ...(moduleProgress.completedExercises || {}) },
+          currentLesson: moduleProgress.currentLesson || existing.currentLesson,
+          isCompleted: existing.isCompleted || student.progress.completedModules?.includes(moduleId) || moduleProgress.progress === 100
+        });
+      } else {
+        // First time seeing this module
+        moduleMap.set(moduleName, {
+          id: moduleId,
+          name: moduleName,
+          progress: moduleProgress.progress || 0,
+          currentLesson: moduleProgress.currentLesson,
+          completedLessons: moduleProgress.completedLessons || [],
+          completedExercises: moduleProgress.completedExercises || {},
+          isCompleted: student.progress.completedModules?.includes(moduleId) || moduleProgress.progress === 100
+        });
+      }
+    });
+    
+    // Convert map back to array and sort by module name
+    return Array.from(moduleMap.values()).sort((a, b) => a.name.localeCompare(b.name));
   };
 
   // Deletes a student from the class and database, shows confirmation message
@@ -318,53 +363,43 @@ const TeacherDashboard = ({ teacherClasses, onStudentDelete, onClassCreate, onCl
                   </div>
                   
                   <div className="prose prose-invert max-w-none">
-                    <div className="flex items-center gap-2 mb-4">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                      </svg>
-                      <span className="text-gray-300">{selectedStudent.email}</span>
+                    <div className="space-y-4">
+                      {getModuleProgress(selectedStudent).map(module => (
+                        <div key={module.id} className="bg-opacity-20 bg-gray-800 p-4 rounded-lg">
+                          <h3 className="text-lg font-medium text-white mb-2">{module.name}</h3>
+                          <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
+                            <div 
+                              className="h-full rounded-full transition-all duration-300" 
+                              style={{ 
+                                width: `${module.progress}%`,
+                                backgroundColor: module.isCompleted ? '#10B981' : '#0A3C91'
+                              }}
+                            />
+                          </div>
+                          <p className="text-gray-300 text-sm">
+                            {module.isCompleted ? 'Completed' : 
+                             module.currentLesson ? `Current Lesson: ${module.currentLesson}` :
+                             `${module.progress}% Complete`}
+                          </p>
+                          {module.completedLessons && module.completedLessons.length > 0 && (
+                            <p className="text-gray-400 text-xs mt-1">
+                              {module.completedLessons.length} lesson{module.completedLessons.length !== 1 ? 's' : ''} completed
+                            </p>
+                          )}
+                          {module.completedExercises && Object.keys(module.completedExercises).length > 0 && (
+                            <p className="text-gray-400 text-xs mt-1">
+                              {Object.keys(module.completedExercises).length} exercise{Object.keys(module.completedExercises).length !== 1 ? 's' : ''} completed
+                            </p>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                    
-                    {selectedStudent.progress && selectedStudent.progress.length > 0 ? (
-                      <div className="mt-6">
-                        <h3 className="text-lg font-medium text-white mb-2">Module Progress</h3>
-                        <ul className="space-y-2">
-                          {selectedStudent.progress.map((module, index) => (
-                            <li 
-                              key={index} 
-                              className="flex items-center justify-between p-3 rounded-md bg-opacity-20 bg-gray-800"
-                            >
-                              <div className="flex items-center gap-3">
-                                {module.isCompleted ? (
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                  </svg>
-                                ) : (
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 10-1.414-1.414L11 10.586V7z" clipRule="evenodd" />
-                                  </svg>
-                                )}
-                                <span className="text-white">{module.title}</span>
-                              </div>
-                              <span className={module.isCompleted ? 'text-green-400' : 'text-gray-400'}>
-                                {module.isCompleted ? 'Completed' : 'In progress'}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : (
-                      <div className="text-gray-400 mt-4">
-                        This student hasn't started any modules yet.
-                      </div>
-                    )}
                   </div>
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center h-64">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                   <p className="text-gray-400 text-center">
                     Select a student to view details

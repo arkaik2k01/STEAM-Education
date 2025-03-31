@@ -5,13 +5,24 @@ const StudentDashboard = ({ studentModules, onModuleSelect }) => {
 
   // Helper function to calculate module progress
   const calculateProgress = (module) => {
+    // Use the progress from Firestore if available
+    if (module.progress !== undefined) {
+      return module.progress;
+    }
+    
+    // Fallback to calculating from sections if no Firestore progress
     if (!module.sections) return 0;
     
-    const totalSections = module.sections.length;
-    const completedSections = module.sections.filter(section => 
-      section.isCompleted).length;
+    const totalLessons = module.sections.length;
+    const completedLessons = module.completedLessons?.length || 0;
+    const totalExercises = module.sections.reduce((total, section) => 
+      total + (section.exercises?.length || 0), 0);
+    const completedExercises = Object.keys(module.completedExercises || {}).length;
     
-    return Math.round((completedSections / totalSections) * 100);
+    // Calculate overall progress as a weighted average
+    const lessonProgress = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+    const exerciseProgress = totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0;
+    return Math.round((lessonProgress + exerciseProgress) / 2);
   };
 
   // When a module is selected, load the module details
@@ -56,8 +67,20 @@ const StudentDashboard = ({ studentModules, onModuleSelect }) => {
                         <div>
                           <h3 className="text-lg font-medium text-white">{module.title}</h3>
                           <p className="text-gray-300 text-sm mt-1">
-                            {progress === 100 ? 'Completed' : `${progress}% Complete`}
+                            {module.isCompleted ? 'Completed' : 
+                             module.currentLesson ? `Current Lesson: ${module.currentLesson}` :
+                             `${progress}% Complete`}
                           </p>
+                          {module.completedLessons && module.completedLessons.length > 0 && (
+                            <p className="text-gray-400 text-xs mt-1">
+                              {module.completedLessons.length} lesson{module.completedLessons.length !== 1 ? 's' : ''} completed
+                            </p>
+                          )}
+                          {module.completedExercises && Object.keys(module.completedExercises).length > 0 && (
+                            <p className="text-gray-400 text-xs mt-1">
+                              {Object.keys(module.completedExercises).length} exercise{Object.keys(module.completedExercises).length !== 1 ? 's' : ''} completed
+                            </p>
+                          )}
                         </div>
                         
                         {/* Module status icon */}
@@ -133,26 +156,33 @@ const StudentDashboard = ({ studentModules, onModuleSelect }) => {
                     
                     {selectedModule.sections && selectedModule.sections.length > 0 && (
                       <div className="mt-6">
-                        <h3 className="text-lg font-medium text-white mb-2">Module Content</h3>
-                        <ul className="space-y-2">
-                          {selectedModule.sections.map((section, index) => (
-                            <li 
-                              key={index} 
-                              className="flex items-center space-x-2 text-gray-300"
-                            >
-                              {section.isCompleted ? (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                </svg>
-                              ) : (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 10-1.414-1.414L11 10.586V7z" clipRule="evenodd" />
-                                </svg>
-                              )}
-                              <span>{section.title || `Section ${index + 1}`}</span>
-                            </li>
-                          ))}
-                        </ul>
+                        <h3 className="text-lg font-medium text-white mb-2">Module Progress</h3>
+                        <div className="space-y-4">
+                          {selectedModule.completedLessons && selectedModule.completedLessons.length > 0 && (
+                            <div className="text-gray-300">
+                              <p>Completed Lessons:</p>
+                              <ul className="list-disc pl-5 mt-2">
+                                {selectedModule.completedLessons.map((lesson, idx) => (
+                                  <li key={idx} className="text-green-400">{lesson}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {selectedModule.completedExercises && Object.keys(selectedModule.completedExercises).length > 0 && (
+                            <div className="text-gray-300">
+                              <p>Completed Exercises:</p>
+                              <p className="text-green-400 mt-1">
+                                {Object.keys(selectedModule.completedExercises).length} exercise{Object.keys(selectedModule.completedExercises).length !== 1 ? 's' : ''} completed
+                              </p>
+                            </div>
+                          )}
+                          {selectedModule.currentLesson && (
+                            <div className="text-gray-300">
+                              <p>Current Lesson:</p>
+                              <p className="text-blue-400 mt-1">{selectedModule.currentLesson}</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
