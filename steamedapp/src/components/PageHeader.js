@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../firebase/services/auth';
+import { destroyModuleInfrastructure } from '../firebase/services/infrastructureService';
+import { auth } from '../firebase/services/auth';
 import MarkdownText from './MarkdownText';
 
 /**
@@ -8,7 +10,8 @@ import MarkdownText from './MarkdownText';
  */
 const PageHeader = ({ 
   title = "STEAM Education Platform", 
-  userRole
+  userRole,
+  currentModuleId = null // Pass module ID when on a module page
 }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -16,6 +19,16 @@ const PageHeader = ({
   const handleLogout = async () => {
     try {
       setLoading(true);
+      
+      // If on a module page, destroy infrastructure first
+      // NOTE: This might be redundant and cause some issues in the back end, delete this first if we run into issues
+      if (currentModuleId) {
+        const userId = auth.currentUser ? auth.currentUser.uid : null;
+        if (userId) {
+          await destroyModuleInfrastructure(userId);
+        }
+      }
+      
       await authService.logout();
       navigate('/login');
     } catch (error) {
@@ -26,14 +39,35 @@ const PageHeader = ({
     }
   };
 
-  const handleHome = () => {
-    // Redirect based on user role
-    if (userRole === 'teacher') {
-      navigate('/teacher-dashboard');
-    } else if (userRole === 'student') {
-      navigate('/student-dashboard');
-    } else {
-      navigate('/');
+  const handleHome = async () => {
+    try {
+      // If on a module page, destroy infrastructure before navigating
+      // NOTE: This might be redundant and cause some issues in the back end, delete this first if we run into issues
+      if (currentModuleId) {
+        const userId = auth.currentUser ? auth.currentUser.uid : null;
+        if (userId) {
+          await destroyModuleInfrastructure(userId);
+        }
+      }
+      
+      // Redirect based on user role
+      if (userRole === 'teacher') {
+        navigate('/teacher-dashboard');
+      } else if (userRole === 'student') {
+        navigate('/student-dashboard');
+      } else {
+        navigate('/');
+      }
+    } catch (error) {
+      console.error('Navigation error:', error);
+      // Still navigate even if infrastructure destruction fails
+      if (userRole === 'teacher') {
+        navigate('/teacher-dashboard');
+      } else if (userRole === 'student') {
+        navigate('/student-dashboard');
+      } else {
+        navigate('/');
+      }
     }
   };
 
@@ -41,7 +75,7 @@ const PageHeader = ({
     <header className="w-full p-4 sticky top-0 z-10" style={{ backgroundColor: '#828282' }}>
       <div className="container mx-auto">
         <div className="flex justify-between items-center">
-          {/* Page Title with MarkdownText support */}
+          {/* Page Title */}
           <h1 className="text-2xl font-bold text-white">
             <MarkdownText 
               content={title}

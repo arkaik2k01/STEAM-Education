@@ -6,8 +6,7 @@ import { useParams } from 'react-router-dom';
 
 export const MonPyEditor = ({
     code_content,
-    onComplete,
-    codeEndpoint
+    onComplete
 }) => {
     // General states
     const [editorContent, setEditorContent] = useState('# Loading module . . .');
@@ -32,6 +31,9 @@ export const MonPyEditor = ({
     const questionID = code_content?.id || 'invalid-id';
     const params = useParams();
     const moduleID = params ? params.moduleId : null;
+
+    // Websocket endpoint URL
+    const codeEndpoint = `ws://35.209.212.254/${userID}/${moduleID}/command`;
 
     // Initial setup
     useEffect(() => {
@@ -72,10 +74,8 @@ export const MonPyEditor = ({
         if (!codeEndpoint) return;
 
         try {
-            // GATEWAY_IP: ws://35.209.212.254/{userID}/{moduleID}/command
-            let user_ws = `ws://35.209.212.254/${userID}/${moduleID}/command`;
-            console.log('Connecting to websocket:', user_ws);
-            const ws = new WebSocket(user_ws);
+            console.log('Connecting to websocket:', codeEndpoint);
+            const ws = new WebSocket(codeEndpoint);
 
             // Set up message handler to receive responses
             ws.onmessage = (event) => {

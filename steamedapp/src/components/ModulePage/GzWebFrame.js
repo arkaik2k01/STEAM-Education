@@ -4,15 +4,14 @@ import { SceneManager } from 'gzweb';
 import { useParams } from 'react-router-dom';
 import { auth } from '../../firebase/services/auth';
 
-// Create react functional component 
 const GzWebFrame = () => {
-    // Create state variables and setter functions 
+    // State variables
     const [sceneManager, setSceneManager] = useState(null); // SceneManager instance
     const [connectionStatus, setConnectionStatus] = useState(false); // Tracks connection status
     const [connectionError, setConnectionError] = useState(null); // Tracks connection errors
     const [isRendering, setIsRendering] = useState(false); // Tracks initial rendering state
     
-    // Create reference to container where simulation is rendered
+    // Container reference for the simulation
     const containerRef = useRef(null);
 
     // Sim back end variables
@@ -20,8 +19,7 @@ const GzWebFrame = () => {
     const params = useParams();
     const moduleID = params ? params.moduleId : 'no-id-module';
 
-    // Create websocket URL
-    // GATEWAY_IP: ws://35.209.212.254/{userID}/{moduleID}/simulation
+    // Websocket URL
     const websocketUrl = `ws://35.209.212.254/${userID}/${moduleID}/simulation`;
 
     // Handle connection to simulation status updates

@@ -1,28 +1,87 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { fetchModuleById } from '../firebase/services/moduleServer';
 import { MCQuestion } from '../components/ModulePage/MCQuestion/MCQuestion';
 import { MonPyEditor } from '../components/ModulePage/PyCodeEditor/MonPyEditor';
 import { FillInTheBlank } from '../components/ModulePage/FillInTheBlank/FillInTheBlank';
 import { GzWebFrame } from '../components/ModulePage/GzWebFrame';
 import MarkdownText from '../components/MarkdownText';
-import { requestModuleSimulation } from '../firebase/services/infrastructureService';
+import { deployModuleInfrastructure, destroyModuleInfrastructure } from '../firebase/services/infrastructureService';
 import PageHeader from '../components/PageHeader';
 import { auth } from '../firebase/services/auth';
 
 const ModulePage = (props) => {
+  const navigate = useNavigate();
   const params = useParams();
+
+  // Component vars
   const moduleId = props.moduleId || (params ? params.moduleId : null);
   const contentContainerRef = useRef(null);
   const simulationContainerRef = useRef(null);
 
+  // UI states
   const [moduleData, setModuleData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState({});
-  const [simulationEndpoint, setSimulationEndpoint] = useState(null);
-  const [compilerEndpoint, setCompilerEndpoint] = useState(null);
   const [contentHeight, setContentHeight] = useState("calc(100vh - 8rem)");
+  const [infrastructureDeployed, setInfrastructureDeployed] = useState(false);
+
+  // Deploy infrastructure when component mounts
+  useEffect(() => {
+    const deployInfrastructure = async () => {
+      if (!moduleId) return;
+      
+      const userId = auth.currentUser ? auth.currentUser.uid : null;
+      if (!userId) {
+        console.error('No authenticated user');
+        setError('Authentication required. Please log in again.');
+        return;
+      }
+
+      try {
+        await deployModuleInfrastructure(moduleId, userId);
+        setInfrastructureDeployed(true);
+      } catch (err) {
+        console.error('Failed to deploy infrastructure:', err);
+        setError('Failed to connect to simulation. Please refresh the page. If the problem persists, contact an administrator.');
+      }
+    };
+
+    deployInfrastructure();
+
+    // Destroy infrastructure when component unmounts
+    return () => {
+      const destroyInfrastructure = async () => {
+        const userId = auth.currentUser ? auth.currentUser.uid : null;
+        if (userId && infrastructureDeployed) {
+          await destroyModuleInfrastructure(userId);
+        }
+      };
+
+      destroyInfrastructure();
+    };
+  }, [moduleId, infrastructureDeployed]);
+
+  // Add a beforeunload event handler to destroy infrastructure on page refresh/close
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const userId = auth.currentUser ? auth.currentUser.uid : null;
+      if (userId && infrastructureDeployed) {
+        // Using navigator.sendBeacon for best chance of completing before page unloads
+        navigator.sendBeacon(
+          'https://steam-iac-pulumi-function-104577670307.us-central1.run.app/destroy',
+          JSON.stringify({ user_id: userId })
+        );
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [infrastructureDeployed]);
 
   // Fetch module data when component mounts
   useEffect(() => {
@@ -33,19 +92,6 @@ const ModulePage = (props) => {
 
         const module = await fetchModuleById(moduleId);
         setModuleData(module);
-
-        // Mock user ID - Replace with actual user ID from auth
-        const userId = auth.currentUser ? auth.currentUser.uid : "test-user";
-
-        // Request simulation infrastructure
-        try {
-          const endpoints = await requestModuleSimulation(moduleId, userId);
-          setSimulationEndpoint(endpoints.simulationEndpoint);
-          setCompilerEndpoint(endpoints.compilerEndpoint);
-        } catch (simError) {
-          console.error('Failed to set up simulation:', simError);
-          // Continue with module load even if simulation setup fails
-        }
       } catch (err) {
         console.error('Failed to fetch module:', err);
         setError('Failed to load module content. Please try again later.');
@@ -134,7 +180,6 @@ const ModulePage = (props) => {
           <div className="exercise-container" style={{ height: '500px' }}>
             <MonPyEditor
               code_content={exercise}
-              codeEndpoint={compilerEndpoint}
               onComplete={() => handleSectionComplete(exercise.id)}
             />
           </div>
@@ -142,7 +187,7 @@ const ModulePage = (props) => {
       default:
         return <p className="text-gray-400">Unsupported exercise type: {exercise.type}</p>;
     }
-  }, [handleSectionComplete, compilerEndpoint]);
+  }, [handleSectionComplete]);
 
   // Render pre-assessment section
   const renderPreAssessment = useCallback(() => {
@@ -203,7 +248,7 @@ const ModulePage = (props) => {
   if (loading) {
     return (
       <div className="min-h-screen" style={{ backgroundColor: '#201E1E' }}>
-        <PageHeader title="Loading Module..." userRole="student" />
+        <PageHeader title="Loading Module..." userRole="student" currentModuleId={moduleId} />
         <div className="flex items-center justify-center h-[calc(100vh-64px)]">
           <div className="text-white text-xl">Loading module content...</div>
         </div>
@@ -215,9 +260,21 @@ const ModulePage = (props) => {
   if (error) {
     return (
       <div className="min-h-screen" style={{ backgroundColor: '#201E1E' }}>
-        <PageHeader title="Module Error" userRole="student" />
-        <div className="flex items-center justify-center h-[calc(100vh-64px)]">
+        <PageHeader title="Module Error" userRole="student" currentModuleId={moduleId} />
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] gap-6">
           <div className="text-red-400 text-xl">{error}</div>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Refresh Page
+          </button>
+          <button 
+            onClick={() => navigate('/student-dashboard')}
+            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+          >
+            Return to Dashboard
+          </button>
         </div>
       </div>
     );
@@ -227,7 +284,7 @@ const ModulePage = (props) => {
   if (!moduleData) {
     return (
       <div className="min-h-screen" style={{ backgroundColor: '#201E1E' }}>
-        <PageHeader title="Module Not Found" userRole="student" />
+        <PageHeader title="Module Not Found" userRole="student" currentModuleId={moduleId} />
         <div className="flex items-center justify-center h-[calc(100vh-64px)]">
           <div className="text-white text-xl">Module not found</div>
         </div>
@@ -238,7 +295,7 @@ const ModulePage = (props) => {
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#201E1E' }}>
       {/* Header with module title */}
-      <PageHeader title={moduleData.title || "Module"} userRole="student" />
+      <PageHeader title={moduleData.title || "Module"} userRole="student" currentModuleId={moduleId} />
 
       {/* Progress bar */}
       <div className="w-full bg-gray-700 h-2">
@@ -321,7 +378,7 @@ const ModulePage = (props) => {
             style={{ height: contentHeight }}
           >
             {/* The position sticky will keep this fixed while scrolling */}
-            <GzWebFrame endpoint={simulationEndpoint} />
+            <GzWebFrame />
           </div>
         </div>
       </div>
