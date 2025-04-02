@@ -15,6 +15,8 @@ const PageHeader = ({
   currentModuleId = null // Pass module ID when on a module page
 }) => {
   const navigate = useNavigate();
+  const [loadingHome, setLoadingHome] = useState(false);
+  const [loadingLogout, setLoadingLogout] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Determine if current module requires infrastructure
@@ -27,6 +29,11 @@ const PageHeader = ({
       // If on a module page that requires infrastructure, destroy it first
       if (currentModuleId && needsInfrastructure) {
         console.log('PageHeader: Destroying infrastructure during logout for module:', currentModuleId);
+
+        document.body.style.cursor = 'wait';
+        setLoading(true);
+        setLoadingLogout(true);
+
         const userId = auth.currentUser ? auth.currentUser.uid : null;
         if (userId) {
           await destroyModuleInfrastructure(userId);
@@ -36,6 +43,7 @@ const PageHeader = ({
       }
       
       await authService.logout();
+      document.body.style.cursor = 'default';
       navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
@@ -50,6 +58,11 @@ const PageHeader = ({
       // If on a module page that requires infrastructure, destroy it before navigating
       if (currentModuleId && needsInfrastructure) {
         console.log('PageHeader: Destroying infrastructure during navigation home for module:', currentModuleId);
+
+        document.body.style.cursor = 'wait';
+        setLoadingHome(true);
+        setLoading(true);
+
         const userId = auth.currentUser ? auth.currentUser.uid : null;
         if (userId) {
           await destroyModuleInfrastructure(userId);
@@ -60,8 +73,10 @@ const PageHeader = ({
       
       // Redirect based on user role
       if (userRole === 'teacher') {
+        document.body.style.cursor = 'default';
         navigate('/teacher-dashboard');
       } else if (userRole === 'student') {
+        document.body.style.cursor = 'default';
         navigate('/student-dashboard');
       } else {
         navigate('/');
@@ -70,8 +85,10 @@ const PageHeader = ({
       console.error('Navigation error:', error);
       // Still navigate even if infrastructure destruction fails
       if (userRole === 'teacher') {
+        document.body.style.cursor = 'default';
         navigate('/teacher-dashboard');
       } else if (userRole === 'student') {
+        document.body.style.cursor = 'default';
         navigate('/student-dashboard');
       } else {
         navigate('/');
@@ -102,7 +119,7 @@ const PageHeader = ({
                         transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
               disabled={loading}
             >
-              Home
+              {loadingHome ? 'Loading...' : 'Home'}
             </button>
             
             {/* Logout button */}
@@ -112,7 +129,7 @@ const PageHeader = ({
                         transition-colors disabled:bg-red-400 disabled:cursor-not-allowed"
               disabled={loading}
             >
-              {loading ? 'Logging out...' : 'Log Out'}
+              {loadingLogout ? 'Logging out...' : 'Log Out'}
             </button>
           </div>
         </div>

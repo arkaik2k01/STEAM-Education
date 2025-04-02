@@ -11,13 +11,15 @@ export const deployModuleInfrastructure = async (moduleId, userId) => {
   try {
     console.log(`Deploying infrastructure for module: ${moduleId}, user: ${userId}`);
 
+    const lowercaseUserID = userId.toLowerCase();
+
     const response = await fetch(DEPLOY_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ 
-        user_id: userId,
+        user_id: lowercaseUserID,
         module_id: moduleId 
       })
     });
@@ -46,13 +48,15 @@ export const destroyModuleInfrastructure = async (userId) => {
   try {
     console.log(`Destroying infrastructure for user: ${userId}`);
 
+    const lowercaseUserID = userId.toLowerCase();
+
     const response = await fetch(DESTROY_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ 
-        user_id: userId
+        user_id: lowercaseUserID
       })
     });
 

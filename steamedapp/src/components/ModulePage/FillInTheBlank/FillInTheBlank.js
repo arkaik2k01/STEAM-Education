@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { DraggableKeyword } from './DraggableKeyword';
-import { parseFillInBlankContent } from './utils/contentParser';
-import { DragAndDropExercise } from './exercise-types/DragAndDropExercise';
-import { MultiBlankExercise } from './exercise-types/MultiBlankExercise';
+import MarkdownText from '../../MarkdownText';
+import { DroppableText } from './DroppableText';
 
 /*
- * FillInTheBlank - Main component for drag and drop fill-in-the-blank exercises
+ * FillInTheBlank - Consolidated component for drag and drop fill-in-the-blank exercises
+ * Now supports only a single dragAndDrop type with improved blank detection and formatting
  */
 export const FillInTheBlank = ({ fib_content, onComplete }) => {
     // State to store the answers for each blank
@@ -15,28 +15,26 @@ export const FillInTheBlank = ({ fib_content, onComplete }) => {
     const [validationResults, setValidationResults] = useState({});
     // State to track exercise completion
     const [isCompleted, setIsCompleted] = useState(false);
-    // State to store the parsed text segments and blank positions
-    const [textSegments, setTextSegments] = useState([]);
-    // State to store the keywords that can be dragged
-    const [keywords, setKeywords] = useState([]);
-    // State to track exercise type (dragAndDrop or multiBlankDragDrop)
-    const [exerciseType, setExerciseType] = useState('');
     // State to track feedback message
     const [feedback, setFeedback] = useState('');
+    // State to store parsed items with blanks
+    const [parsedItems, setParsedItems] = useState([]);
+    // State to store the keywords that can be dragged
+    const [keywords, setKeywords] = useState([]);
 
-    // On mount, determine the exercise type and parse content
+    // On mount, parse the content and prepare the exercise
     useEffect(() => {
         if (!fib_content) return;
 
-        // Parse the content based on its structure
-        const { type, segments, possibleAnswers } = parseFillInBlankContent(fib_content);
+        console.log('Processing fill-in-the-blank content:', fib_content.id);
 
-        setExerciseType(type);
-        setTextSegments(segments);
+        // Parse items to identify blanks
+        const newParsedItems = parseItems(fib_content.items || []);
+        setParsedItems(newParsedItems);
 
-        // Shuffle and set the keywords
-        if (possibleAnswers && Array.isArray(possibleAnswers)) {
-            setKeywords(shuffleArray([...possibleAnswers]));
+        // Shuffle and set the keywords from possibleAnswers array
+        if (fib_content.possibleAnswers && Array.isArray(fib_content.possibleAnswers)) {
+            setKeywords(shuffleArray([...fib_content.possibleAnswers]));
         }
     }, [fib_content]);
 
@@ -44,25 +42,8 @@ export const FillInTheBlank = ({ fib_content, onComplete }) => {
     useEffect(() => {
         if (isCompleted || !fib_content || Object.keys(validationResults).length === 0) return;
 
-        // Get all blanks based on exercise type
-        const getAllBlanks = () => {
-            if (exerciseType === 'dragAndDrop') {
-                return textSegments.filter(segment => segment.type === 'blank');
-            } else if (exerciseType === 'multiBlankDragDrop') {
-                let allBlanks = [];
-                textSegments.forEach(question => {
-                    const blanks = question.segments.filter(segment => segment.type === 'blank');
-                    allBlanks = [...allBlanks, ...blanks];
-                });
-                return allBlanks;
-            }
-            return [];
-        };
-
-        const allBlanks = getAllBlanks();
-        const totalBlanks = allBlanks.length;
-
-        // Count correctly answered blanks
+        // Count total blanks and correct answers
+        const totalBlanks = parsedItems.flatMap(item => item.segments.filter(seg => seg.type === 'blank')).length;
         const correctBlanks = Object.values(validationResults).filter(result => result === true).length;
 
         // If all blanks are answered correctly, complete the exercise
@@ -71,7 +52,76 @@ export const FillInTheBlank = ({ fib_content, onComplete }) => {
             setFeedback('All answers are correct! Well done!');
             onComplete?.();
         }
-    }, [validationResults, textSegments, exerciseType, fib_content, onComplete, isCompleted]);
+    }, [validationResults, parsedItems, fib_content, onComplete, isCompleted]);
+
+    // Parse items to identify text and blank segments
+    const parseItems = (items) => {
+        return items.map((item, index) => {
+            const segments = [];
+            const text = item.text || `Question ${index + 1}`;
+            const itemId = item.id || `item-${index}`;
+            const correctAnswer = item.category || '';
+
+            // Regular expression to match two or more consecutive underscores
+            const regex = /_{2,}/g;
+            let lastIndex = 0;
+            let match;
+            let blankIndex = 0;
+            let hasBlank = false;
+
+            // Find blanks in the text (two or more underscores)
+            while ((match = regex.exec(text)) !== null) {
+                // Add the text segment before this blank
+                if (match.index > lastIndex) {
+                    segments.push({
+                        type: 'text',
+                        content: text.substring(lastIndex, match.index),
+                        id: `text-${itemId}-${lastIndex}`
+                    });
+                }
+
+                // Add the blank with the correct answer
+                segments.push({
+                    type: 'blank',
+                    id: `blank-${itemId}-${blankIndex}`,
+                    itemId: itemId,
+                    correctAnswer: correctAnswer
+                });
+
+                blankIndex++;
+                hasBlank = true;
+
+                // Update lastIndex to continue after this blank
+                lastIndex = match.index + match[0].length;
+            }
+
+            // Add any remaining text after the last blank
+            if (lastIndex < text.length) {
+                segments.push({
+                    type: 'text',
+                    content: text.substring(lastIndex),
+                    id: `text-${itemId}-end`
+                });
+            }
+
+            // If no blanks were found using regex, add a separate blank
+            // This is a fallback for items without explicit underscores
+            if (!hasBlank) {
+                segments.push({
+                    type: 'blank',
+                    id: `blank-${itemId}-0`,
+                    itemId: itemId,
+                    correctAnswer: correctAnswer
+                });
+            }
+
+            return {
+                id: itemId,
+                segments,
+                originalText: text
+            };
+        });
+    };
 
     // Handle drag event end - update answers when a keyword is dropped
     const handleDragEnd = (event) => {
@@ -100,23 +150,29 @@ export const FillInTheBlank = ({ fib_content, onComplete }) => {
 
     // Validate a single answer
     const validateAnswer = (blankId, answer) => {
-        // Find the correct answer for this blank
-        let correctAnswer = '';
+        // Find the blank segment
         let segment = null;
+        let correctAnswer = '';
 
-        if (exerciseType === 'dragAndDrop') {
-            segment = textSegments.find(segment => segment.type === 'blank' && segment.id === blankId);
-            if (segment) {
+        // Search in all parsed items for the blank
+        for (const item of parsedItems) {
+            const foundSegment = item.segments.find(seg => 
+                seg.type === 'blank' && seg.id === blankId
+            );
+            
+            if (foundSegment) {
+                segment = foundSegment;
                 correctAnswer = segment.correctAnswer;
+                break;
             }
-        } else if (exerciseType === 'multiBlankDragDrop') {
-            // Search in all questions
-            for (const question of textSegments) {
-                segment = question.segments.find(segment => segment.type === 'blank' && segment.id === blankId);
-                if (segment) {
-                    correctAnswer = segment.correctAnswer;
-                    break;
-                }
+        }
+
+        // Also check if there's a correctAnswers mapping in the content
+        if (fib_content.correctAnswers && fib_content.correctAnswers[answer]) {
+            const mappedItemId = fib_content.correctAnswers[answer];
+            // If this answer maps to the current item, it's correct
+            if (segment && segment.itemId === mappedItemId) {
+                correctAnswer = answer;
             }
         }
 
@@ -155,41 +211,58 @@ export const FillInTheBlank = ({ fib_content, onComplete }) => {
         return newArray;
     };
 
-    // Render the exercise based on its type
-    const renderExerciseContent = () => {
-        if (exerciseType === 'dragAndDrop') {
-            return (
-                <DragAndDropExercise
-                    textSegments={textSegments}
-                    answers={answers}
-                    keywords={keywords}
-                    validationResults={validationResults}
-                />
-            );
-        } else if (exerciseType === 'multiBlankDragDrop') {
-            return (
-                <MultiBlankExercise
-                    textSegments={textSegments}
-                    answers={answers}
-                    keywords={keywords}
-                    validationResults={validationResults}
-                />
-            );
-        } else {
-            // Fallback for unsupported exercise types
-            return (
-                <div className="bg-yellow-900 bg-opacity-20 p-4 rounded-md text-yellow-200 border border-yellow-700">
-                    <h3 className="font-bold mb-2">Unsupported Exercise Type</h3>
-                    <p>The exercise type "{exerciseType}" is not supported. Exercise ID: {fib_content.id || 'Unknown'}</p>
-                </div>
-            );
-        }
-    };
-
     return (
         <DndContext closestCenter={closestCenter} onDragEnd={handleDragEnd}>
             <div className="space-y-6">
-                {renderExerciseContent()}
+                {/* List of questions with blanks */}
+                <div className="bg-opacity-20 bg-white rounded-lg p-6">
+                    <h3 className="text-lg font-semibold mb-4 border-b border-gray-700 pb-2 text-white">
+                        Fill in the Blanks
+                    </h3>
+                    <ol className="list-decimal list-inside space-y-4 text-white">
+                        {parsedItems.map((item) => (
+                            <li key={item.id} className="ml-2">
+                                <div className="inline-flex flex-wrap items-center">
+                                    {item.segments.map((segment, segIndex) => {
+                                        if (segment.type === 'text') {
+                                            return (
+                                                <span key={segment.id} className="mr-0">
+                                                    {segment.content}
+                                                </span>
+                                            );
+                                        } else if (segment.type === 'blank') {
+                                            return (
+                                                <DroppableText
+                                                    key={segment.id}
+                                                    id={segment.id}
+                                                    value={answers[segment.id]}
+                                                    isCorrect={validationResults[segment.id]}
+                                                />
+                                            );
+                                        }
+                                        return null;
+                                    })}
+                                </div>
+                            </li>
+                        ))}
+                    </ol>
+                </div>
+
+                {/* Word bank */}
+                <div className="bg-opacity-20 bg-white rounded-lg p-6">
+                    <h3 className="text-lg font-semibold mb-4 border-b border-gray-700 pb-2 text-white">
+                        Word Bank
+                    </h3>
+                    <div className="flex flex-wrap gap-4">
+                        {keywords.map((keyword, index) => (
+                            <DraggableKeyword
+                                keyword={keyword}
+                                id={`keyword-${index}`}
+                                key={index}
+                            />
+                        ))}
+                    </div>
+                </div>
 
                 {/* Feedback and control buttons */}
                 <div className="flex flex-col gap-4">

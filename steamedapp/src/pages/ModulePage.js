@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { fetchModuleById } from '../firebase/services/moduleServer';
 import { MCQuestion } from '../components/ModulePage/MCQuestion/MCQuestion';
 import { MonPyEditor } from '../components/ModulePage/PyCodeEditor/MonPyEditor';
+import { TeleopControls } from '../components/ModulePage/PyCodeEditor/TeleopControls';
 import { FillInTheBlank } from '../components/ModulePage/FillInTheBlank/FillInTheBlank';
 import { GzWebFrame } from '../components/ModulePage/GzWebFrame';
 import MarkdownText from '../components/MarkdownText';
@@ -10,6 +11,7 @@ import { deployModuleInfrastructure, destroyModuleInfrastructure } from '../fire
 import PageHeader from '../components/PageHeader';
 import { auth } from '../firebase/services/auth';
 import { requiresInfrastructure } from '../utils/moduleInfoFile';
+import InfrastructureLoadingScreens from '../components/ModulePage/InfrastructureLoadingScreens';
 
 const ModulePage = (props) => {
   const navigate = useNavigate();
@@ -28,6 +30,14 @@ const ModulePage = (props) => {
   const [contentHeight, setContentHeight] = useState("calc(100vh - 8rem)");
   const [infrastructureDeployed, setInfrastructureDeployed] = useState(false);
   
+  // Infrastructure loading states
+  const [deployingInfrastructure, setDeployingInfrastructure] = useState(false);
+  const [linkingInfrastructure, setLinkingInfrastructure] = useState(false);
+  const [infrastructureLoadingPhase, setInfrastructureLoadingPhase] = useState(0);
+  
+  // Track interactive terminal status
+  const [activeInteractiveQuestion, setActiveInteractiveQuestion] = useState(null);
+
   // Check if this module needs infrastructure
   const needsInfrastructure = moduleId ? requiresInfrastructure(moduleId) : false;
 
@@ -40,10 +50,10 @@ const ModulePage = (props) => {
 
         const module = await fetchModuleById(moduleId);
         setModuleData(module);
-        
+
         // Log whether this module requires infrastructure
         console.log(`Module ${moduleId} requires infrastructure: ${needsInfrastructure}`);
-        
+
       } catch (err) {
         console.error('Failed to fetch module:', err);
         setError('Failed to load module content. Please try again later.');
@@ -65,13 +75,13 @@ const ModulePage = (props) => {
         console.log('Skipping infrastructure deployment - data not ready');
         return;
       }
-      
+
       // Skip deployment if this module doesn't need infrastructure
       if (!needsInfrastructure) {
         console.log(`Module ${moduleId} does not require infrastructure - skipping deployment`);
         return;
       }
-      
+
       const userId = auth.currentUser ? auth.currentUser.uid : null;
       if (!userId) {
         console.error('No authenticated user');
@@ -82,12 +92,32 @@ const ModulePage = (props) => {
       // Only deploy if not already deployed
       if (!infrastructureDeployed) {
         try {
+          // Show first loading screen
+          setDeployingInfrastructure(true);
+          setInfrastructureLoadingPhase(1);
+          
           console.log('Deploying infrastructure for module:', moduleId);
           await deployModuleInfrastructure(moduleId, userId);
-          setInfrastructureDeployed(true);
+          
+          console.log('Infrastructure deployment successful');
+          
+          // Switch to second loading screen
+          setDeployingInfrastructure(false);
+          setLinkingInfrastructure(true);
+          setInfrastructureLoadingPhase(2);
+          
+          // Set a fixed timer for the second loading screen - 3 minutes and 30 seconds
+          setTimeout(() => {
+            console.log('Gateway linking period completed');
+            setLinkingInfrastructure(false);
+            setInfrastructureDeployed(true);
+          }, 210000); // 3.5 minutes = 210000 ms
+          
         } catch (err) {
           console.error('Failed to deploy infrastructure:', err);
           setError('Failed to connect to simulation. Please refresh the page. If the problem persists, contact an administrator.');
+          setDeployingInfrastructure(false);
+          setLinkingInfrastructure(false);
         }
       }
     };
@@ -114,7 +144,7 @@ const ModulePage = (props) => {
     const handleBeforeUnload = () => {
       // Skip if infrastructure wasn't deployed or module doesn't need it
       if (!moduleData || !infrastructureDeployed || !needsInfrastructure) return;
-      
+
       const userId = auth.currentUser ? auth.currentUser.uid : null;
       if (userId) {
         console.log('Sending beacon to destroy infrastructure for module:', moduleId);
@@ -127,7 +157,7 @@ const ModulePage = (props) => {
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
-    
+
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
@@ -172,6 +202,14 @@ const ModulePage = (props) => {
     }));
   }, []);
 
+  // Handle code execution for interactive terminal
+  const handleCodeExecuted = useCallback((success, questionId) => {
+    if (success && questionId) {
+      console.log(`Interactive terminal initialized for question: ${questionId}`);
+      setActiveInteractiveQuestion(questionId);
+    }
+  }, []);
+
   // Render different exercise types
   const renderExercise = useCallback((exercise) => {
     console.log(`Rendering exercise of type: ${exercise.type}`);
@@ -196,7 +234,6 @@ const ModulePage = (props) => {
           />
         );
       case 'dragAndDrop':
-      case 'multiBlankDragDrop':
         return (
           <FillInTheBlank
             fib_content={exercise}
@@ -209,13 +246,15 @@ const ModulePage = (props) => {
             <MonPyEditor
               code_content={exercise}
               onComplete={() => handleSectionComplete(exercise.id)}
+              infrastructureDeployed={infrastructureDeployed}
+              onCodeExecuted={exercise.terminalType === 'interactive_terminal' ? handleCodeExecuted : null}
             />
           </div>
         );
       default:
-        return <p className="text-gray-400">Unsupported exercise type: {exercise.type}</p>;
+        return <p className="text-red">Unsupported exercise type: {exercise.type}</p>;
     }
-  }, [handleSectionComplete]);
+  }, [handleSectionComplete, infrastructureDeployed, handleCodeExecuted]);
 
   // Render pre-assessment section
   const renderPreAssessment = useCallback(() => {
@@ -272,6 +311,23 @@ const ModulePage = (props) => {
     return totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
   };
 
+  // Check if module has any interactive terminal questions
+  const hasInteractiveQuestion = useCallback(() => {
+    if (!moduleData || !moduleData.sections) return false;
+    
+    for (const section of moduleData.sections) {
+      if (section.exercises) {
+        for (const exercise of section.exercises) {
+          if (exercise.terminalType === 'interactive_terminal') {
+            return true;
+          }
+        }
+      }
+    }
+    
+    return false;
+  }, [moduleData]);
+
   // Loading state
   if (loading) {
     return (
@@ -291,13 +347,13 @@ const ModulePage = (props) => {
         <PageHeader title="Module Error" userRole="student" currentModuleId={moduleId} />
         <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] gap-6">
           <div className="text-red-400 text-xl">{error}</div>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
             Refresh Page
           </button>
-          <button 
+          <button
             onClick={() => navigate('/student-dashboard')}
             className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
           >
@@ -320,8 +376,16 @@ const ModulePage = (props) => {
     );
   }
 
+  // Determine if we should show teleop controls
+  const showTeleopControls = hasInteractiveQuestion() && activeInteractiveQuestion !== null;
+  
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#201E1E' }}>
+      {/* Infrastructure loading screens - show only if the module requires infrastructure */}
+      {needsInfrastructure && (deployingInfrastructure || linkingInfrastructure) && (
+        <InfrastructureLoadingScreens loadingPhase={infrastructureLoadingPhase} />
+      )}
+      
       {/* Header with module title */}
       <PageHeader title={moduleData.title || "Module"} userRole="student" currentModuleId={moduleId} />
 
@@ -354,7 +418,7 @@ const ModulePage = (props) => {
                 {/* Section content */}
                 <div className="prose prose-invert max-w-none bg-opacity-10 bg-white rounded-lg p-6 mb-6">
                   <div className="text-xl font-semibold text-white mb-4">
-                    <MarkdownText 
+                    <MarkdownText
                       content={section.title}
                       size="text-xl"
                       color="text-white"
@@ -375,7 +439,7 @@ const ModulePage = (props) => {
                     {section.exercises.map((exercise) => (
                       <div key={exercise.id} className="bg-opacity-10 bg-white rounded-lg p-6">
                         <div className="text-lg font-semibold text-white mb-2">
-                          <MarkdownText 
+                          <MarkdownText
                             content={exercise.title}
                             size="text-lg"
                             color="text-white"
@@ -385,7 +449,7 @@ const ModulePage = (props) => {
                         {exercise.description && (
                           <MarkdownText
                             content={exercise.description}
-                            color="text-gray-300"
+                            color="text-white"
                             className="mb-4"
                           />
                         )}
@@ -399,14 +463,33 @@ const ModulePage = (props) => {
             ))}
           </div>
 
-          {/* Right side: Fixed GzWebFrame */}
-          <div
-            ref={simulationContainerRef}
-            className="bg-opacity-10 bg-white rounded-lg overflow-hidden sticky top-24"
-            style={{ height: contentHeight }}
-          >
-            {/* Pass whether this module requires infrastructure to GzWebFrame */}
-            <GzWebFrame requiresInfrastructure={needsInfrastructure} />
+          {/* Right side: Fixed GzWebFrame and TeleopControls (if present) */}
+          <div className="space-y-6">
+            {/* GzWebFrame container */}
+            <div
+              ref={simulationContainerRef}
+              className="bg-opacity-10 bg-white rounded-lg overflow-hidden sticky top-24"
+              style={{ 
+                height: showTeleopControls
+                  ? `calc(${contentHeight} - 280px)` // Reduce height to accommodate teleop controls
+                  : contentHeight
+              }}
+            >
+              {/* Pass whether this module requires infrastructure to GzWebFrame */}
+              <GzWebFrame
+                requiresInfrastructure={needsInfrastructure}
+                infrastructureDeployed={infrastructureDeployed}
+              />
+            </div>
+            
+            {/* Teleop Controls - only show when interactive terminal has been initialized */}
+            {showTeleopControls && (
+              <TeleopControls
+                questionId={activeInteractiveQuestion}
+                enabled={true}
+                infrastructureDeployed={infrastructureDeployed}
+              />
+            )}
           </div>
         </div>
       </div>
