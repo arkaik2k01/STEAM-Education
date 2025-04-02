@@ -16,6 +16,7 @@ import {
   where,
   addDoc
 } from 'firebase/firestore';
+import { fetchAllModules } from '../firebase/services/moduleServer';
 
 const TeacherDashboardPage = () => {
   const [classes, setClasses] = useState([]);
@@ -52,11 +53,19 @@ const TeacherDashboardPage = () => {
         const classesSnapshot = await getDocs(classesQuery);
         
         if (classesSnapshot.empty) {
-          // No classes found, set empty array
           setClasses([]);
           setLoading(false);
           return;
         }
+        
+        // Fetch all modules to get their names
+        const modulesList = await fetchAllModules();
+        const moduleNames = modulesList.reduce((acc, module) => {
+          // Map both by ID and title to handle both cases
+          acc[module.id] = module.title;
+          acc[module.title] = module.title; // Also map by title for backward compatibility
+          return acc;
+        }, {});
         
         // Process class data and fetch students for each class
         const classesData = [];
@@ -75,14 +84,20 @@ const TeacherDashboardPage = () => {
               const studentData = studentDoc.data();
               
               // Get student progress
-              const progress = [];
+              const progress = studentData.progress?.moduleProgress || {
+                currentModule: null,
+                currentLesson: null,
+                completedModules: [],
+                modules: {}
+              };
               
-              // Add student with progress
+              // Add student with progress and module names
               students.push({
                 id: studentId,
                 name: studentData.name || 'Unnamed Student',
                 email: studentData.email || '',
-                progress
+                progress,
+                moduleNames // Pass module names to the student object
               });
             }
           }
@@ -91,7 +106,7 @@ const TeacherDashboardPage = () => {
           classesData.push({
             id: classDoc.id,
             name: classData.className || 'Unnamed Class',
-            classCode: classData.classCode, // Include the class code
+            classCode: classData.classCode,
             students
           });
         }

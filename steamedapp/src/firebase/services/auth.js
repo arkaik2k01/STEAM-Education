@@ -134,7 +134,39 @@ export const createStudentAccount = async (email, password, studentData) => {
       progress: {
         currentLevel: 1,
         completedAssignments: [],
-        totalScore: 0
+        totalScore: 0,
+        moduleProgress: {
+          currentModule: "Basic Python",
+          currentLesson: "Pre-Assessment",
+          completedModules: [],
+          modules: {
+            "Basic Python": {
+              progress: 0,
+              currentLesson: "Pre-Assessment",
+              completedLessons: []
+            },
+            "Introduction to ROS 2": {
+              progress: 0,
+              currentLesson: null,
+              completedLessons: []
+            },
+            "Controlling Robot Arms with Joint Trajectories": {
+              progress: 0,
+              currentLesson: null,
+              completedLessons: []
+            },
+            "Tugbot": {
+              progress: 0,
+              currentLesson: null,
+              completedLessons: []
+            },
+            "X3 and X4 Drones": {
+              progress: 0,
+              currentLesson: null,
+              completedLessons: []
+            }
+          }
+        }
       }
     };
     
@@ -170,7 +202,13 @@ export const loginUser = async (email, password, navigate) => {
       // Sign out the user
       await signOut(auth);
       
-      // Throw a custom error
+      // If navigate function is provided, use it
+      if (navigate) {
+        navigate('/verify-email');
+        return null;
+      }
+      
+      // Throw a custom error if no navigation function
       throw new FirebaseError('auth/email-not-verified', 'Email not verified. A new verification email has been sent.');
     }
     
@@ -193,7 +231,6 @@ export const loginUser = async (email, password, navigate) => {
         // Navigate with error parameter instead of throwing an error
         if (navigate) {
           navigate('/login?error=account-disabled');
-          // Return null to prevent further processing
           return null;
         }
         

@@ -6,7 +6,8 @@ import { auth } from '../firebase/services/auth';
 import { fetchAllModules } from '../firebase/services/moduleServer';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { modulesData } from '../utils/modulesData'; // Fallback data for testing
+import { modulesData } from '../utils/modulesData';
+import { initializeModuleProgress, getStudentProgress } from '../firebase/services/progressTracking';
 
 const StudentDashboardPage = () => {
   const navigate = useNavigate();
@@ -26,50 +27,59 @@ const StudentDashboardPage = () => {
         const modulesList = await fetchAllModules();
         
         if (user) {
-          // Try to get student progress from Firestore
           try {
-            const studentRef = doc(db, 'users', 'students', 'accounts', user.uid);
-            const studentDoc = await getDoc(studentRef);
+            // Initialize progress if needed
+            await initializeModuleProgress(user.uid);
             
-            if (studentDoc.exists()) {
-              const studentData = studentDoc.data();
-              const progress = studentData.progress || {};
-              
-              // Mark completed modules based on student progress
+            // Get student progress
+            const progress = await getStudentProgress(user.uid);
+            
+            if (progress && progress.moduleProgress) {
+              // Map the progress data to modules
               const modulesWithProgress = modulesList.map(module => {
-                const moduleProgress = progress[module.id];
+                const moduleProgress = progress.moduleProgress.modules[module.id] || {
+                  progress: 0,
+                  currentLesson: null,
+                  completedLessons: [],
+                  completedExercises: {}
+                };
+                
+                // Calculate total progress based on completed lessons and exercises
+                const totalLessons = module.sections?.length || 0;
+                const completedLessonsCount = moduleProgress.completedLessons?.length || 0;
+                const totalExercises = module.sections?.reduce((total, section) => 
+                  total + (section.exercises?.length || 0), 0) || 0;
+                const completedExercisesCount = Object.keys(moduleProgress.completedExercises || {}).length;
+                
+                // Calculate overall progress as a weighted average of lessons and exercises
+                const lessonProgress = totalLessons > 0 ? (completedLessonsCount / totalLessons) * 100 : 0;
+                const exerciseProgress = totalExercises > 0 ? (completedExercisesCount / totalExercises) * 100 : 0;
+                const calculatedProgress = Math.round((lessonProgress + exerciseProgress) / 2);
+                
                 return {
                   ...module,
-                  isCompleted: moduleProgress?.isCompleted || false,
-                  sections: module.sections.map(section => {
-                    const sectionProgress = moduleProgress?.sections?.[section.id];
-                    return {
-                      ...section,
-                      isCompleted: sectionProgress?.isCompleted || false
-                    };
-                  })
+                  progress: calculatedProgress,
+                  currentLesson: moduleProgress.currentLesson,
+                  completedLessons: moduleProgress.completedLessons || [],
+                  completedExercises: moduleProgress.completedExercises || {},
+                  isCompleted: progress.moduleProgress.completedModules?.includes(module.id) || calculatedProgress === 100
                 };
               });
               
               setModules(modulesWithProgress);
             } else {
-              // Student document not found, use modules as-is
               setModules(modulesList);
             }
           } catch (progressError) {
             console.error('Error fetching student progress:', progressError);
-            // Use modules without progress data
             setModules(modulesList);
           }
         } else {
-          // No user logged in, use modules as-is
           setModules(modulesList);
         }
       } catch (err) {
         console.error('Error loading modules:', err);
         setError('Failed to load modules. Using fallback data.');
-        
-        // Use fallback data for development/testing
         setModules(modulesData);
       } finally {
         setLoading(false);
@@ -80,8 +90,18 @@ const StudentDashboardPage = () => {
   }, [user]);
 
   const handleModuleSelect = (moduleId) => {
-    // Navigate to module page
-    navigate(`/module/${moduleId}`);
+    // Navigate to module page with current progress
+    const selectedModule = modules.find(m => m.id === moduleId);
+    if (selectedModule) {
+      navigate(`/module/${moduleId}`, {
+        state: {
+          progress: selectedModule.progress,
+          currentLesson: selectedModule.currentLesson,
+          completedLessons: selectedModule.completedLessons,
+          completedExercises: selectedModule.completedExercises
+        }
+      });
+    }
   };
 
   return (
@@ -99,7 +119,7 @@ const StudentDashboardPage = () => {
       ) : (
         <StudentDashboard 
           studentModules={modules} 
-          onModuleSelect={handleModuleSelect} 
+          onModuleSelect={handleModuleSelect}
         />
       )}
     </div>
