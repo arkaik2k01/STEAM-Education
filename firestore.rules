@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isTeacher() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+
+    match /class/{classId} {
+      // Teachers can create and manage classes
+      allow create: if isTeacher();
+      // Teachers can update their own classes, students can read classes they're in
+      allow update: if isTeacher() && resource.data.teacherId == request.auth.uid;
+      allow read: if request.auth != null && 
+        (isTeacher() || 
+         resource.data.students[request.auth.uid] != null);
+    }
+  }
+}

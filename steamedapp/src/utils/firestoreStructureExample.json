@@ -1,0 +1,111 @@
+
+
+"modules": {
+  // Collection of all modules
+
+  // modules (a collection containing the 5 module documents) ->
+  // {some_module_id} (a document containing the module's title, description, and order) ->
+  // sections (a collection containing the individual sections of the module) ->
+  // {some_section_id} (a document containing the section's title, content, and order) ->
+  // exercises (a collection containing the individual exercises of the section) ->
+  // {some_exercise_id} (a document containing the exercise's type, title, description and other fields depending on the exercise type)
+
+  "moduleId1": {
+    // Document for a specific module
+    "title": "Introduction to Robotics",
+    "description": "Learn the basics of robotics and simulation",
+    "order": 1, // Optional field for sorting
+    // Subcollections within module
+    "preAssessment": {
+      "title": "Pre-Assessment Quiz",
+      "description": "Test your knowledge before starting the module",
+      "order": 0,
+      // Subcollection for pre-assessment questions
+      "preAssessId1": {
+        "questions": [
+          {
+            "type": "multipleChoice",
+            "question": "What is the main purpose of a robot sensor?",
+            "options": [
+              "To make the robot move faster",
+              "To gather information about the environment",
+              "To store programs",
+              "To generate power"
+            ],
+            "correctAnswer": "To gather information about the environment"
+          }
+          // More questions...
+        ]
+      }
+    },
+    "sections": {
+      // Subcollection of sections within a module
+      "sectionId1": {
+        "title": "Introduction to Robot Movement",
+        "content": "In this section, we'll learn about robot movement...",
+        "order": 1,
+        "exercises": {
+          // Subcollection of exercises within a section
+          "exerciseId1": {
+            "type": "multipleChoice",
+            "title": "Understanding Robot Movement",
+            "description": "Test your knowledge about robot movement",
+            "question": "Which of the following controls robot movement?",
+            "options": [
+              "Sensors",
+              "Actuators",
+              "Cameras",
+              "Displays"
+            ],
+            "correctAnswer": "Actuators"
+          },
+          "exerciseId2": {
+            "type": "codeExercise",
+            "title": "Program Robot Movement",
+            "description": "Write code to move the robot forward",
+            "code": "# Write your code below\ndef move_robot():\n    # Your code here\n    pass\n\n# Call your function\nmove_robot()",
+            "terminalType": "gen_terminal"
+          },
+          "exerciseId3": {
+            "type": "codeExercise",
+            "title": "Interactive Robot Control",
+            "description": "Write code to control the robot with keyboard",
+            "code": "# This code will allow you to control the robot\nimport rospy\nfrom geometry_msgs.msg import Twist\n\n# Your code here",
+            "terminalType": "interactive_terminal"
+          }
+        }
+      },
+      "sectionId2": {
+        "title": "Robot Sensors",
+        "content": "In this section, we'll explore different types of robot sensors...",
+        "order": 2,
+        // More exercises...
+      }
+    }
+  },
+  "moduleId2": {
+    // Another module...
+  }
+},
+// Expected input based on exercise type. Also a list of all the exercise types (missing fill in the blank)
+"MCQuestion": {
+  "type": "multipleChoice",
+  "question": "What is the main purpose of a robot sensor?",
+  "options": [
+    "To make the robot move faster",
+    "To gather information about the environment",
+    "To store programs",
+    "To generate power"
+  ],
+  "correctAnswer": "To gather information about the environment",
+},
+"MonPyEditor": {
+  "type": "codeExercise",
+  "title": "Program Robot Movement",
+  "description": "Write code to move the robot forward",
+  "code": "# Write your code below\ndef move_robot():\n    # Your code here\n    pass\n\n# Call your function\nmove_robot()",
+  "terminalType": "gen_terminal", // Can be "gen_terminal" or "interactive_terminal"
+},
+"GzWebFrame": {
+  "endpoint": "ws://35.209.212.254" // Base WebSocket URL for simulation
+}
