@@ -60,60 +60,78 @@ export const FillInTheBlank = ({ fib_content, onComplete }) => {
             const segments = [];
             const text = item.text || `Question ${index + 1}`;
             const itemId = item.id || `item-${index}`;
-            const correctAnswer = item.category || '';
+            const correctAnswers = Array.isArray(item.category) ? item.category : [item.category];
+            const blankIds = Array.isArray(item.id) ? item.id : [item.id];
 
-            // Regular expression to match two or more consecutive underscores
-            const regex = /_{3,}/g;
-            let lastIndex = 0;
-            let match;
-            let blankIndex = 0;
-            let hasBlank = false;
+            // Split text into lines
+            const lines = text.split('\n');
+            
+            // Process each line
+            lines.forEach((line, lineIndex) => {
+                // Regular expression to match two or more consecutive underscores
+                const regex = /_{3,}/g;
+                let lastIndex = 0;
+                let match;
+                let blankIndex = 0;
+                let hasBlank = false;
 
-            // Find blanks in the text (two or more underscores)
-            while ((match = regex.exec(text)) !== null) {
-                // Add the text segment before this blank
-                if (match.index > lastIndex) {
+                // Find blanks in the text (two or more underscores)
+                while ((match = regex.exec(line)) !== null) {
+                    // Add the text segment before this blank
+                    if (match.index > lastIndex) {
+                        segments.push({
+                            type: 'text',
+                            content: line.substring(lastIndex, match.index),
+                            id: `text-${itemId}-${lineIndex}-${lastIndex}`
+                        });
+                    }
+
+                    // Add the blank with the correct answer
+                    segments.push({
+                        type: 'blank',
+                        id: blankIds[blankIndex] || `blank-${itemId}-${lineIndex}-${blankIndex}`,
+                        itemId: itemId,
+                        correctAnswer: correctAnswers[blankIndex] || '',
+                        blankIndex: blankIndex
+                    });
+
+                    blankIndex++;
+                    hasBlank = true;
+
+                    // Update lastIndex to continue after this blank
+                    lastIndex = match.index + match[0].length;
+                }
+
+                // Add any remaining text after the last blank
+                if (lastIndex < line.length) {
                     segments.push({
                         type: 'text',
-                        content: text.substring(lastIndex, match.index),
-                        id: `text-${itemId}-${lastIndex}`
+                        content: line.substring(lastIndex),
+                        id: `text-${itemId}-${lineIndex}-end`
                     });
                 }
 
-                // Add the blank with the correct answer
-                segments.push({
-                    type: 'blank',
-                    id: `blank-${itemId}-${blankIndex}`,
-                    itemId: itemId,
-                    correctAnswer: correctAnswer
-                });
+                // If no blanks were found using regex, add a separate blank
+                // This is a fallback for items without explicit underscores
+                if (!hasBlank) {
+                    segments.push({
+                        type: 'blank',
+                        id: blankIds[0] || `blank-${itemId}-${lineIndex}-0`,
+                        itemId: itemId,
+                        correctAnswer: correctAnswers[0] || '',
+                        blankIndex: 0
+                    });
+                }
 
-                blankIndex++;
-                hasBlank = true;
-
-                // Update lastIndex to continue after this blank
-                lastIndex = match.index + match[0].length;
-            }
-
-            // Add any remaining text after the last blank
-            if (lastIndex < text.length) {
-                segments.push({
-                    type: 'text',
-                    content: text.substring(lastIndex),
-                    id: `text-${itemId}-end`
-                });
-            }
-
-            // If no blanks were found using regex, add a separate blank
-            // This is a fallback for items without explicit underscores
-            if (!hasBlank) {
-                segments.push({
-                    type: 'blank',
-                    id: `blank-${itemId}-0`,
-                    itemId: itemId,
-                    correctAnswer: correctAnswer
-                });
-            }
+                // Add a line break after each line except the last one
+                if (lineIndex < lines.length - 1) {
+                    segments.push({
+                        type: 'text',
+                        content: '\n',
+                        id: `text-${itemId}-${lineIndex}-break`
+                    });
+                }
+            });
 
             return {
                 id: itemId,
@@ -167,15 +185,6 @@ export const FillInTheBlank = ({ fib_content, onComplete }) => {
             }
         }
 
-        // Also check if there's a correctAnswers mapping in the content
-        if (fib_content.correctAnswers && fib_content.correctAnswers[answer]) {
-            const mappedItemId = fib_content.correctAnswers[answer];
-            // If this answer maps to the current item, it's correct
-            if (segment && segment.itemId === mappedItemId) {
-                correctAnswer = answer;
-            }
-        }
-
         // Update validation result
         const isCorrect = answer === correctAnswer;
         setValidationResults(prev => ({
@@ -211,8 +220,9 @@ export const FillInTheBlank = ({ fib_content, onComplete }) => {
         return newArray;
     };
 
+    // Render the exercise content
     return (
-        <DndContext closestCenter={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <div className="space-y-6">
                 {/* List of questions with blanks */}
                 <div className="bg-opacity-20 bg-white rounded-lg p-6">
@@ -223,7 +233,7 @@ export const FillInTheBlank = ({ fib_content, onComplete }) => {
                         {parsedItems.map((item) => (
                             <li key={item.id} className="ml-2">
                                 <div className="inline-flex flex-wrap items-center">
-                                    {item.segments.map((segment, segIndex) => {
+                                    {item.segments.map((segment) => {
                                         if (segment.type === 'text') {
                                             return (
                                                 <span key={segment.id} className="mr-0">
@@ -256,9 +266,9 @@ export const FillInTheBlank = ({ fib_content, onComplete }) => {
                     <div className="flex flex-wrap gap-4">
                         {keywords.map((keyword, index) => (
                             <DraggableKeyword
+                                key={`keyword-${index}`}
                                 keyword={keyword}
                                 id={`keyword-${index}`}
-                                key={index}
                             />
                         ))}
                     </div>
@@ -267,10 +277,11 @@ export const FillInTheBlank = ({ fib_content, onComplete }) => {
                 {/* Feedback and control buttons */}
                 <div className="flex flex-col gap-4">
                     {feedback && (
-                        <div className={`p-4 rounded-md ${feedback.includes("Correct!") || isCompleted
+                        <div className={`p-4 rounded-md ${
+                            feedback.includes("Correct!") || isCompleted
                                 ? 'bg-green-900 bg-opacity-20 text-green-200 border border-green-700'
                                 : 'bg-red-900 bg-opacity-20 text-red-200 border border-red-700'
-                            }`}>
+                        }`}>
                             {feedback}
                         </div>
                     )}
