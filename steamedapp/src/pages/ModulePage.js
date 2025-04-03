@@ -6,7 +6,7 @@ import { MonPyEditor } from '../components/ModulePage/PyCodeEditor/MonPyEditor';
 import { FillInTheBlank } from '../components/ModulePage/FillInTheBlank/FillInTheBlank';
 import { GzWebFrame } from '../components/ModulePage/GzWebFrame';
 import MarkdownText from '../components/MarkdownText';
-import { deployModuleInfrastructure, destroyModuleInfrastructure, requestModuleSimulation } from '../firebase/services/infrastructureService';
+import { deployModuleInfrastructure, destroyModuleInfrastructure } from '../firebase/services/infrastructureService';
 import PageHeader from '../components/PageHeader';
 import { auth } from '../firebase/services/auth';
 import { requiresInfrastructure } from '../utils/moduleInfoFile';
@@ -102,14 +102,9 @@ const ModulePage = (props) => {
           console.log('Set progress state:', progressState); // Debug log
         }
 
-        // Request simulation infrastructure
-        try {
-          const endpoints = await requestModuleSimulation(moduleId, user.uid);
-          setSimulationEndpoint(endpoints.simulationEndpoint);
-          setCompilerEndpoint(endpoints.compilerEndpoint);
-        } catch (simError) {
-          console.error('Failed to set up simulation:', simError);
-        }
+        // Note: The simulation endpoints will be set after infrastructure deployment
+        // This replaces the previous requestModuleSimulation call
+
       } catch (err) {
         console.error('Failed to fetch module:', err);
         setError('Failed to load module content. Please try again later.');
@@ -151,6 +146,13 @@ const ModulePage = (props) => {
           console.log('Deploying infrastructure for module:', moduleId);
           await deployModuleInfrastructure(moduleId, userId);
           setInfrastructureDeployed(true);
+          
+          // Set the simulation endpoints based on the module ID
+          // These should be adjusted according to your actual infrastructure
+          const modulePrefix = moduleId.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const baseUrl = `https://${userId}-${modulePrefix}`;
+          setSimulationEndpoint(`${baseUrl}-sim.steam.edu`);
+          setCompilerEndpoint(`${baseUrl}-compiler.steam.edu`);
         } catch (err) {
           console.error('Failed to deploy infrastructure:', err);
           setError('Failed to connect to simulation. Please refresh the page. If the problem persists, contact an administrator.');
