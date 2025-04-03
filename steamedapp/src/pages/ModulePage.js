@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { fetchModuleById } from '../firebase/services/moduleServer';
 import { MCQuestion } from '../components/ModulePage/MCQuestion/MCQuestion';
 import { MonPyEditor } from '../components/ModulePage/PyCodeEditor/MonPyEditor';
@@ -12,10 +12,12 @@ import PageHeader from '../components/PageHeader';
 import { auth } from '../firebase/services/auth';
 import { requiresInfrastructure } from '../utils/moduleInfoFile';
 import InfrastructureLoadingScreens from '../components/ModulePage/InfrastructureLoadingScreens';
+import { completeLesson, getStudentProgress } from '../firebase/services/progressTracking';
 
 const ModulePage = (props) => {
   const navigate = useNavigate();
   const params = useParams();
+  const location = useLocation();
 
   // Component vars
   const moduleId = props.moduleId || (params ? params.moduleId : null);
@@ -27,6 +29,10 @@ const ModulePage = (props) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState({});
+  const [currentLesson, setCurrentLesson] = useState(null);
+  const [completedLessons, setCompletedLessons] = useState([]);
+  const [simulationEndpoint, setSimulationEndpoint] = useState(null);
+  const [compilerEndpoint, setCompilerEndpoint] = useState(null);
   const [contentHeight, setContentHeight] = useState("calc(100vh - 8rem)");
   const [infrastructureDeployed, setInfrastructureDeployed] = useState(false);
   
@@ -41,7 +47,7 @@ const ModulePage = (props) => {
   // Check if this module needs infrastructure
   const needsInfrastructure = moduleId ? requiresInfrastructure(moduleId) : false;
 
-  // Fetch module data when component mounts
+  // Fetch module data and progress when component mounts
   useEffect(() => {
     const loadModule = async () => {
       try {
@@ -53,6 +59,61 @@ const ModulePage = (props) => {
 
         // Log whether this module requires infrastructure
         console.log(`Module ${moduleId} requires infrastructure: ${needsInfrastructure}`);
+
+        // Get current user
+        const user = auth.currentUser;
+        if (!user) {
+          throw new Error('No user logged in');
+        }
+
+        // Load saved progress from Firestore
+        const savedProgress = await getStudentProgress(user.uid);
+        console.log('Loaded progress:', savedProgress); // Debug log
+        
+        if (savedProgress?.moduleProgress?.modules[moduleId]) {
+          const moduleProgress = savedProgress.moduleProgress.modules[moduleId];
+          console.log('Module progress:', moduleProgress); // Debug log
+          
+          // Set completed lessons
+          setCompletedLessons(moduleProgress.completedLessons || []);
+          
+          // Set current lesson
+          setCurrentLesson(moduleProgress.currentLesson);
+          
+          // Set individual question/exercise progress
+          const progressState = {};
+          
+          // Add pre-assessment progress
+          if (moduleProgress.completedLessons.includes('Pre-Assessment')) {
+            module.preAssessment?.questions?.forEach((_, index) => {
+              progressState[`preassess-${index}`] = true;
+            });
+          }
+          
+          // Add other lesson progress
+          moduleProgress.completedLessons.forEach(lesson => {
+            module.sections.forEach(section => {
+              section.exercises?.forEach(exercise => {
+                if (exercise.title === lesson || exercise.id === lesson) {
+                  progressState[exercise.id] = true;
+                }
+              });
+            });
+          });
+
+          // Add completed exercises from completedExercises object
+          if (moduleProgress.completedExercises) {
+            Object.keys(moduleProgress.completedExercises).forEach(exerciseId => {
+              progressState[exerciseId] = true;
+            });
+          }
+          
+          setProgress(progressState);
+          console.log('Set progress state:', progressState); // Debug log
+        }
+
+        // Note: The simulation endpoints will be set after infrastructure deployment
+        // This replaces the previous requestModuleSimulation call
 
       } catch (err) {
         console.error('Failed to fetch module:', err);
@@ -111,7 +172,14 @@ const ModulePage = (props) => {
             console.log('Gateway linking period completed');
             setLinkingInfrastructure(false);
             setInfrastructureDeployed(true);
-          }, 210000); // 3.5 minutes = 210000 ms
+            
+            // Set the simulation endpoints based on the module ID
+            // These should be adjusted according to your actual infrastructure
+            const modulePrefix = moduleId.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const baseUrl = `https://${userId}-${modulePrefix}`;
+            setSimulationEndpoint(`${baseUrl}-sim.steam.edu`);
+            setCompilerEndpoint(`${baseUrl}-compiler.steam.edu`);
+          }, 60000); // 1 minute = 60000 ms
           
         } catch (err) {
           console.error('Failed to deploy infrastructure:', err);
@@ -194,13 +262,84 @@ const ModulePage = (props) => {
   }, []);
 
   // Update progress when a section is completed
-  const handleSectionComplete = useCallback((sectionId) => {
-    console.log(`Section completed: ${sectionId}`);
-    setProgress(prev => ({
-      ...prev,
-      [sectionId]: true
-    }));
-  }, []);
+  const handleSectionComplete = useCallback(async (sectionId, lessonName) => {
+    try {
+      const user = auth.currentUser;
+      if (!user || !moduleData) return;
+
+      console.log('Completing section:', sectionId, 'lesson:', lessonName); // Debug log
+
+      // Get all lessons in order
+      const allLessons = ['Pre-Assessment'];
+      moduleData.sections.forEach(section => {
+        if (section.exercises) {
+          section.exercises.forEach(exercise => {
+            allLessons.push(exercise.title || exercise.id);
+          });
+        }
+      });
+
+      // For pre-assessment, check if all questions are completed
+      if (lessonName === 'Pre-Assessment') {
+        const preAssessmentQuestions = moduleData.preAssessment?.questions || [];
+        const updatedProgress = {
+          ...progress,
+          [sectionId]: true
+        };
+        
+        const allPreAssessmentCompleted = preAssessmentQuestions.every((_, index) => 
+          updatedProgress[`preassess-${index}`]
+        );
+
+        // Update local state first
+        setProgress(updatedProgress);
+        
+        console.log('Pre-assessment completion check:', allPreAssessmentCompleted); // Debug log
+
+        // Only mark Pre-Assessment as complete if all questions are done
+        if (allPreAssessmentCompleted) {
+          await completeLesson(
+            user.uid,
+            moduleId,
+            'Pre-Assessment',
+            allLessons
+          );
+          
+          const updatedCompletedLessons = [...completedLessons, 'Pre-Assessment'];
+          setCompletedLessons(updatedCompletedLessons);
+        }
+      } else {
+        // For regular lessons/exercises
+        const updatedProgress = {
+          ...progress,
+          [sectionId]: true
+        };
+        
+        // Update local state first
+        setProgress(updatedProgress);
+
+        // Save to Firestore
+        await completeLesson(
+          user.uid,
+          moduleId,
+          lessonName || sectionId,
+          allLessons,
+          sectionId // Pass the exercise ID separately
+        );
+        
+        if (lessonName && !completedLessons.includes(lessonName)) {
+          setCompletedLessons(prev => [...prev, lessonName]);
+        }
+
+        console.log('Exercise completed, updated state:', {
+          progress: updatedProgress,
+          completedLessons: [...completedLessons, lessonName]
+        }); // Debug log
+      }
+    } catch (error) {
+      console.error('Failed to save progress:', error);
+    }
+  }, [moduleData, completedLessons, progress, moduleId]);
 
   // Handle code execution for interactive terminal
   const handleCodeExecuted = useCallback((success, questionId) => {
@@ -212,9 +351,6 @@ const ModulePage = (props) => {
 
   // Render different exercise types
   const renderExercise = useCallback((exercise) => {
-    console.log(`Rendering exercise of type: ${exercise.type}`);
-
-    // Add validation to check if the exercise data is valid
     if (!exercise) {
       console.warn(`Invalid exercise data:`, exercise);
       return (
@@ -225,19 +361,32 @@ const ModulePage = (props) => {
       );
     }
 
+    // Check if exercise is completed (check both ID and title)
+    const isCompleted = progress[exercise.id] || 
+                       (exercise.title && completedLessons.includes(exercise.title));
+                       
+    if (isCompleted) {
+      return (
+        <div className="bg-opacity-20 bg-green-800 rounded-lg p-6 text-white">
+          <h3 className="text-lg font-semibold mb-2">✓ Exercise Completed</h3>
+          <p>You have successfully completed this exercise.</p>
+        </div>
+      );
+    }
+
     switch (exercise.type) {
       case 'multipleChoice':
         return (
           <MCQuestion
             mcq_content={exercise}
-            onComplete={() => handleSectionComplete(exercise.id)}
+            onComplete={() => handleSectionComplete(exercise.id, exercise.title)}
           />
         );
       case 'dragAndDrop':
         return (
           <FillInTheBlank
             fib_content={exercise}
-            onComplete={() => handleSectionComplete(exercise.id)}
+            onComplete={() => handleSectionComplete(exercise.id, exercise.title)}
           />
         );
       case 'coding':
@@ -245,7 +394,8 @@ const ModulePage = (props) => {
           <div className="exercise-container" style={{ height: '500px' }}>
             <MonPyEditor
               code_content={exercise}
-              onComplete={() => handleSectionComplete(exercise.id)}
+              codeEndpoint={compilerEndpoint}
+              onComplete={() => handleSectionComplete(exercise.id, exercise.title)}
               infrastructureDeployed={infrastructureDeployed}
               onCodeExecuted={exercise.terminalType === 'interactive_terminal' ? handleCodeExecuted : null}
             />
@@ -254,7 +404,7 @@ const ModulePage = (props) => {
       default:
         return <p className="text-red">Unsupported exercise type: {exercise.type}</p>;
     }
-  }, [handleSectionComplete, infrastructureDeployed, handleCodeExecuted]);
+  }, [handleSectionComplete, infrastructureDeployed, handleCodeExecuted, compilerEndpoint, progress, completedLessons]);
 
   // Render pre-assessment section
   const renderPreAssessment = useCallback(() => {
@@ -262,22 +412,39 @@ const ModulePage = (props) => {
       return null;
     }
 
+    // Check if pre-assessment is already completed
+    if (completedLessons.includes('Pre-Assessment')) {
+      return (
+        <div className="bg-opacity-10 bg-white rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold text-white mb-4">Pre-Assessment Completed</h2>
+          <p className="text-white">You have completed the pre-assessment. You can proceed to the module content.</p>
+        </div>
+      );
+    }
+
     return (
       <div className="bg-opacity-10 bg-white rounded-lg p-6 mb-6">
         <h2 className="text-xl font-semibold text-white mb-4">Pre-Assessment</h2>
         {moduleData.preAssessment.questions.map((question, index) => {
+          // Check if this specific question is completed
+          const isCompleted = progress[`preassess-${index}`];
+          
           return (
             <div key={`preassess-${index}`} className="mb-6">
-              <MCQuestion
-                mcq_content={question}
-                onComplete={() => handleSectionComplete(`preassess-${index}`)}
-              />
+              {isCompleted ? (
+                <div className="text-green-400 mb-2">✓ Question {index + 1} completed</div>
+              ) : (
+                <MCQuestion
+                  mcq_content={question}
+                  onComplete={() => handleSectionComplete(`preassess-${index}`, 'Pre-Assessment')}
+                />
+              )}
             </div>
           );
         })}
       </div>
     );
-  }, [moduleData, handleSectionComplete]);
+  }, [moduleData, handleSectionComplete, progress, completedLessons]);
 
   // Calculate progress percentage
   const calculateProgress = () => {

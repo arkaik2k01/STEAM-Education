@@ -32,35 +32,10 @@ export const FillInTheBlank = ({ fib_content, onComplete }) => {
         const newParsedItems = parseItems(fib_content.items || []);
         setParsedItems(newParsedItems);
 
-        // Get keywords either from possibleAnswers or from item categories
-        let keywordsList = [];
-        
+        // Shuffle and set the keywords from possibleAnswers array
         if (fib_content.possibleAnswers && Array.isArray(fib_content.possibleAnswers)) {
-            keywordsList = [...fib_content.possibleAnswers];
-        } else {
-            // If no possibleAnswers provided, collect from item categories
-            (fib_content.items || []).forEach(item => {
-                if (Array.isArray(item.category)) {
-                    // For multi-blank items, add each category
-                    item.category.forEach(cat => {
-                        if (cat && !keywordsList.includes(cat)) {
-                            keywordsList.push(cat);
-                        }
-                    });
-                } else if (item.category && !keywordsList.includes(item.category)) {
-                    // For single-blank items
-                    keywordsList.push(item.category);
-                }
-            });
+            setKeywords(shuffleArray([...fib_content.possibleAnswers]));
         }
-        
-        // Add extra distractors if provided
-        if (fib_content.distractors && Array.isArray(fib_content.distractors)) {
-            keywordsList = [...keywordsList, ...fib_content.distractors];
-        }
-        
-        // Set the shuffled keywords
-        setKeywords(shuffleArray(keywordsList));
     }, [fib_content]);
 
     // Check if all blanks are filled correctly to determine overall completion
@@ -85,14 +60,10 @@ export const FillInTheBlank = ({ fib_content, onComplete }) => {
             const segments = [];
             const text = item.text || `Question ${index + 1}`;
             const itemId = item.id || `item-${index}`;
-            
-            // Handle arrays of categories and ids for multiple blanks in a single item
-            const isMultipleAnswers = Array.isArray(item.category) && Array.isArray(item.id);
-            const categories = isMultipleAnswers ? item.category : [item.category || ''];
-            const blankIds = isMultipleAnswers ? item.id : [`item-${index}-0`];
+            const correctAnswer = item.category || '';
 
             // Regular expression to match two or more consecutive underscores
-            const regex = /_{2,}/g;
+            const regex = /_{3,}/g;
             let lastIndex = 0;
             let match;
             let blankIndex = 0;
@@ -109,18 +80,12 @@ export const FillInTheBlank = ({ fib_content, onComplete }) => {
                     });
                 }
 
-                // Get the correct answer for this blank index (or default to empty if out of bounds)
-                const correctAnswer = categories[blankIndex] || '';
-                // Get the blank ID for this blank index (or generate one if out of bounds)
-                const blankId = blankIds[blankIndex] || `blank-${itemId}-${blankIndex}`;
-
                 // Add the blank with the correct answer
                 segments.push({
                     type: 'blank',
-                    id: `blank-${blankId}-${blankIndex}`,
+                    id: `blank-${itemId}-${blankIndex}`,
                     itemId: itemId,
-                    correctAnswer: correctAnswer,
-                    blankId: blankId
+                    correctAnswer: correctAnswer
                 });
 
                 blankIndex++;
@@ -146,8 +111,7 @@ export const FillInTheBlank = ({ fib_content, onComplete }) => {
                     type: 'blank',
                     id: `blank-${itemId}-0`,
                     itemId: itemId,
-                    correctAnswer: categories[0] || '',
-                    blankId: blankIds[0] || `blank-${itemId}-0`
+                    correctAnswer: correctAnswer
                 });
             }
 
@@ -189,28 +153,16 @@ export const FillInTheBlank = ({ fib_content, onComplete }) => {
         // Find the blank segment
         let segment = null;
         let correctAnswer = '';
-        let blankNumber = 0;
 
         // Search in all parsed items for the blank
         for (const item of parsedItems) {
-            const foundSegmentIndex = item.segments.findIndex(seg => 
+            const foundSegment = item.segments.find(seg => 
                 seg.type === 'blank' && seg.id === blankId
             );
             
-            if (foundSegmentIndex !== -1) {
-                segment = item.segments[foundSegmentIndex];
+            if (foundSegment) {
+                segment = foundSegment;
                 correctAnswer = segment.correctAnswer;
-                
-                // Calculate which blank number this is in the overall exercise
-                const blanksBeforeThisItem = parsedItems
-                    .slice(0, parsedItems.findIndex(i => i.id === item.id))
-                    .flatMap(i => i.segments.filter(s => s.type === 'blank'));
-                
-                const blanksInThisItem = item.segments
-                    .slice(0, foundSegmentIndex + 1)
-                    .filter(s => s.type === 'blank');
-                
-                blankNumber = blanksBeforeThisItem.length + blanksInThisItem.length;
                 break;
             }
         }
@@ -219,7 +171,7 @@ export const FillInTheBlank = ({ fib_content, onComplete }) => {
         if (fib_content.correctAnswers && fib_content.correctAnswers[answer]) {
             const mappedItemId = fib_content.correctAnswers[answer];
             // If this answer maps to the current item, it's correct
-            if (segment && segment.blankId === mappedItemId) {
+            if (segment && segment.itemId === mappedItemId) {
                 correctAnswer = answer;
             }
         }
@@ -232,9 +184,9 @@ export const FillInTheBlank = ({ fib_content, onComplete }) => {
         }));
 
         if (!isCorrect) {
-            setFeedback(`Try again. "${answer}" doesn't match the expected answer for blank #${blankNumber}.`);
+            setFeedback(`Try again. "${answer}" doesn't match the expected answer for this blank.`);
         } else {
-            setFeedback(`Correct! "${answer}" is right for blank #${blankNumber}.`);
+            setFeedback(`Correct! "${answer}" is right.`);
         }
 
         return isCorrect;

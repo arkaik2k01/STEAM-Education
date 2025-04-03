@@ -389,7 +389,7 @@ const GzWebFrame = ({ requiresInfrastructure: propRequiresInfra,
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
                         </svg>
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-3">Interactive Simulations Coming Soon!</h3>
+                    <h3 className="text-xl font-bold text-white mb-3">Interactive Simulations Next Module!</h3>
                     <p className="text-blue-200 mb-6">
                         In upcoming modules, this area will display interactive 3D robotics simulations where you can
                         experiment with your code and see real-time results.
