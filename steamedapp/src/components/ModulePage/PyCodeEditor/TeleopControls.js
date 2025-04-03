@@ -19,7 +19,7 @@ export const TeleopControls = (
 
     // --- Websocket setup ---
     const lowercaseUserID = userID.toLowerCase();
-    const commandEndpoint = `wss://35.209.212.254/${lowercaseUserID}/${moduleID}/command`;
+    const commandEndpoint = `ws://35.209.212.254/${lowercaseUserID}/${moduleID}/command`;
     // -----------------------
     // Establish a connection to websocket
     const connectToServerWithPromise = () => {
