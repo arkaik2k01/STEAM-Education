@@ -2,14 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { auth } from '../../../firebase/services/auth';
 import { useParams } from 'react-router-dom';
 
-export const TeleopControls = ({ 
-    questionId, // The ID of the interactive terminal question
-    enabled = false, // Only enable when code has been successfully submitted
-    infrastructureDeployed = false // Is infrastructure ready?
-}) => {
+export const TeleopControls = (
+    { hasMonPyConnected }
+) => {
     // State
     const [socket, setSocket] = useState(null);
-    const [connected, setConnected] = useState(false);
+    const MonPyExists = hasMonPyConnected;
+    const [connected, setConnected] = useState(hasMonPyConnected);
     const [error, setError] = useState(null);
     const [activeKey, setActiveKey] = useState(null);
     
@@ -18,10 +17,57 @@ export const TeleopControls = ({
     const params = useParams();
     const moduleID = params ? params.moduleId : null;
 
-    // WebSocket endpoint URL - same as MonPyEditor
+    // --- Websocket setup ---
     const lowercaseUserID = userID.toLowerCase();
     const commandEndpoint = `ws://35.209.212.254/${lowercaseUserID}/${moduleID}/command`;
-    
+    // -----------------------
+    // Establish a connection to websocket
+    const connectToServerWithPromise = () => {
+        return new Promise((resolve, reject) => {
+            try {
+                console.log('Connecting teleop controls to command endpoint:', commandEndpoint);
+                const ws = new WebSocket(commandEndpoint);
+                
+                ws.onopen = () => {
+                    console.log('Teleop controls connected to command server');
+                    setConnected(true);
+                    setError(null);
+                    resolve(ws);
+                };
+                
+                ws.onmessage = (event) => {
+                    console.log('Teleop received response:', event.data);
+                    try {
+                        const response = JSON.parse(event.data);
+                        if (response.error) {
+                            setError(response.error);
+                        }
+                    } catch (err) {
+                        console.error('Error parsing teleop response:', err);
+                    }
+                };
+                
+                ws.onerror = (err) => {
+                    console.error('Teleop WebSocket error:', err);
+                    setError('Connection error. Controls may not work.');
+                    setConnected(false);
+                    reject(err);
+                };
+                
+                ws.onclose = () => {
+                    console.log('Teleop WebSocket connection closed');
+                    setConnected(false);
+                };
+                
+                setSocket(ws);
+            } catch (err) {
+                console.error('Error setting up Teleop WebSocket:', err);
+                setError('Failed to establish connection for robot controls');
+                reject(err);
+            }
+        });
+    };
+
     // Array of control buttons with their labels, keycodes, and descriptions
     const controlButtons = [
         // Movement controls (main grid)
@@ -46,9 +92,6 @@ export const TeleopControls = ({
 
     // Connect to the command endpoint when enabled
     useEffect(() => {
-        // Only establish connection if infrastructure is deployed and we're enabled
-        if (!enabled || !infrastructureDeployed || !questionId) return;
-        
         const connectToServer = async () => {
             try {
                 console.log('Connecting teleop controls to command endpoint:', commandEndpoint);
@@ -97,7 +140,7 @@ export const TeleopControls = ({
         };
         
         connectToServer();
-    }, [enabled, infrastructureDeployed, commandEndpoint, questionId]);
+    }, [commandEndpoint, moduleID]);
 
     // Send keystroke input to interactive terminal
     const sendKeystroke = (keystroke) => {
@@ -137,16 +180,13 @@ export const TeleopControls = ({
                       disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed
                       ${button.className} 
                       ${activeKey === button.key ? 'ring-2 ring-yellow-400 bg-blue-700' : ''}`}
-            disabled={!connected || !enabled}
+            disabled={!connected}
             title={button.description}
             aria-label={button.description}
         >
             {button.label}
         </button>
     );
-
-    // Don't render if not enabled
-    if (!enabled) return null;
 
     return (
         <div className="bg-opacity-20 bg-gray-800 rounded-lg p-6">

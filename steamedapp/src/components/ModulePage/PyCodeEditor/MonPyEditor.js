@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { Editor } from '@monaco-editor/react';
 import { auth } from '../../../firebase/services/auth';
 import { useParams } from 'react-router-dom';
+import { TeleopControls } from './TeleopControls';
 
 export const MonPyEditor = ({
     code_content,
@@ -12,7 +13,6 @@ export const MonPyEditor = ({
     // Editor states
     const [editorContent, setEditorContent] = useState('# Loading module...');
     const [editorHeight, setEditorHeight] = useState('300px');
-    const [code, setCode] = useState('');
     const editorContainerRef = useRef(null);
     const editorRef = useRef(null);
 
@@ -28,17 +28,20 @@ export const MonPyEditor = ({
     const [result, setResult] = useState(null);
     const [resetting, setResetting] = useState(false);
 
+    // Teleop control states
+    const isInteractive = code_content?.interactive_terminal || false;
+    const [showTeleop, setShowTeleop] = useState(false);
+
     // Get user info for command connection
     const userID = auth.currentUser ? auth.currentUser.uid : 'no-id-user';
     const params = useParams();
     const moduleID = params ? params.moduleId : null;
     const questionID = code_content?.id || 'invalid-id';
-    const isInteractive = code_content?.terminalType === 'interactive_terminal';
 
     // --- Websocket setup ---
     const lowercaseUserID = userID.toLowerCase();
     const commandEndpoint = `ws://35.209.212.254/${lowercaseUserID}/${moduleID}/command`;
-
+    // -----------------------
     // Establish a connection to websocket
     const connectToServerWithPromise = () => {
         return new Promise((resolve, reject) => {
@@ -86,11 +89,21 @@ export const MonPyEditor = ({
         });
     };
 
+    // Function to properly format code with actual newlines and tabs
+    const formatCodeString = (codeStr) => {
+        if (!codeStr) return '';
+
+        // Replace escaped newlines and tabs with actual ones
+        return codeStr
+            .replace(/\\n/g, '\n')
+            .replace(/\\t/g, '\t');
+    };
+
     // Load initial code content
     useEffect(() => {
         if (code_content && code_content.code) {
-            setEditorContent(code_content.code);
-            setCode(code_content.code);
+            const formattedCode = formatCodeString(code_content.code);
+            setEditorContent(formattedCode);
         }
     }, [code_content]);
 
@@ -120,8 +133,6 @@ export const MonPyEditor = ({
     const handleSubmit = async () => {
         if (!infrastructureDeployed) return;
 
-        setCode(editorRef.current.getValue());
-
         setSubmitting(true);
         setError(null);
         setResult(null);
@@ -138,13 +149,13 @@ export const MonPyEditor = ({
             const payload = {
                 module_id: moduleID,
                 term_type: "general_terminal",
-                python_script: code,
+                python_script: editorRef.current.getValue(),
                 interactive_input: null
             };
             console.log('Sending payload...');
 
             submitSocket.send(JSON.stringify(payload));
-            console.log('Payload submitted!');
+            console.log('Payload submitted!: ', payload);
         } catch (err) {
             setError(err.message || 'Error submitting code');
             console.error('Error submitting code:', err);
@@ -161,7 +172,8 @@ export const MonPyEditor = ({
         setResult(null);
 
         if (code_content && editorRef.current) {
-            editorRef.current.setValue(code_content.code || '');
+            const formattedCode = formatCodeString(code_content.code);
+            editorRef.current.setValue(formattedCode);
         }
 
         setResetting(false);
@@ -272,7 +284,6 @@ export const MonPyEditor = ({
                     >
                         {resetting ? 'Resetting...' : 'Reset Code'}
                     </button>
-
                     <button
                         onClick={handleSubmit}
                         disabled={connecting || submitting || !infrastructureDeployed}
@@ -290,7 +301,18 @@ export const MonPyEditor = ({
                                 !connected ? 'Not Connected. Submit your code to establish connection.' :
                                     'Execute Code'}
                     </button>
+                    {isInteractive && (
+                        <button
+                            onClick={() => setShowTeleop(!showTeleop)}
+                            disabled={!connected || !infrastructureDeployed}
+                            className={`px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 
+                                       disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed`}
+                        >
+                            {showTeleop ? 'Hide Teleop' : 'Show Teleop'}
+                        </button>
+                    )}
                 </div>
+                {showTeleop && <TeleopControls />}
             </div>
         </div>
     );
