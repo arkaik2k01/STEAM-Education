@@ -5,7 +5,7 @@
   },
   "functions": [
     {
-      "source": "functions",
+      "source": "steamedapp/functions",
       "codebase": "default",
       "ignore": [
         "node_modules",
@@ -17,7 +17,8 @@
     }
   ],
   "hosting": {
-    "public": "build",
+    "site": "steameducation-app",
+    "public": "steamedapp/build",
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -27,6 +28,17 @@
       {
         "source": "**",
         "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|html)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
       }
     ]
   },

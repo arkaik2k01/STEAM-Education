@@ -179,7 +179,7 @@ const ModulePage = (props) => {
             const baseUrl = `https://${userId}-${modulePrefix}`;
             setSimulationEndpoint(`${baseUrl}-sim.steam.edu`);
             setCompilerEndpoint(`${baseUrl}-compiler.steam.edu`);
-          }, 60000); // 1 minute = 60000 ms
+          }, 120000); // 2 minutes = 120000 ms
           
         } catch (err) {
           console.error('Failed to deploy infrastructure:', err);

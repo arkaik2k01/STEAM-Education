@@ -30,8 +30,8 @@ const GzWebFrame = ({ requiresInfrastructure: propRequiresInfra,
     const lowercaseUserID = userID.toLowerCase();
 
     // Websocket URLs
-    const simulationURL = `ws://35.209.212.254/${lowercaseUserID}/${moduleID}/simulation`;
-    const commandURL = `ws://35.209.212.254/${lowercaseUserID}/${moduleID}/command`;
+    const simulationURL = `wss://35.209.212.254/${lowercaseUserID}/${moduleID}/simulation`;
+    const commandURL = `wss://35.209.212.254/${lowercaseUserID}/${moduleID}/command`;
 
     // Determine if this module requires infrastructure
     // Use prop if provided, otherwise check moduleConfig

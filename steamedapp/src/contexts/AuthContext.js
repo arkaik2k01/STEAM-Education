@@ -59,32 +59,27 @@ export const AuthProvider = ({ children }) => {
       setAuthError(null);
       
       if (user) {
+        // First set the basic user info
         setCurrentUser(user);
         setEmailVerified(user.emailVerified);
         
-        if (user.emailVerified) {
-          // Get user role and check for disabled account
-          const { role, error } = await checkUserRole(user.uid);
-          
-          if (mounted) {
-            if (error && error.includes('disabled')) {
-              // If account is disabled, sign the user out
-              setAuthError(error);
-              await signOut(auth);
-              setCurrentUser(null);
-              setEmailVerified(false);
-              setUserRole(null);
-            } else {
-              // Set the role if no error or error is not about disabled account
-              setUserRole(role);
-              if (error && !role) {
-                setAuthError(error);
-              }
-            }
-          }
-        } else {
-          if (mounted) {
+        // Always check user role, regardless of email verification
+        const { role, error } = await checkUserRole(user.uid);
+        
+        if (mounted) {
+          if (error && error.includes('disabled')) {
+            // If account is disabled, sign the user out
+            setAuthError(error);
+            await signOut(auth);
+            setCurrentUser(null);
+            setEmailVerified(false);
             setUserRole(null);
+          } else {
+            // Set the role regardless of email verification
+            setUserRole(role);
+            if (error && !role) {
+              setAuthError(error);
+            }
           }
         }
       } else {

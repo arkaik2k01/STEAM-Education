@@ -64,19 +64,18 @@ const RequireUnauth = ({ children }) => {
   if (loading) return <LoadingScreen />;
   
   if (currentUser) {
+    // If email is not verified, redirect to verification page
     if (!emailVerified) {
       return <Navigate to="/verify-email" replace />;
     }
     
-    if (userRole === 'teacher') {
-      return <Navigate to="/teacher-dashboard" replace />;
+    // If we have a valid role, redirect to appropriate dashboard
+    if (userRole) {
+      return <Navigate to={`/${userRole}-dashboard`} replace />;
     }
     
-    if (userRole === 'student') {
-      return <Navigate to="/student-dashboard" replace />;
-    }
-    
-    return <Navigate to="/" replace />;
+    // If no valid role is found, stay on current page
+    return children;
   }
   
   return children;
